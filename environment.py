@@ -6,7 +6,7 @@ import random
 #manually defined modules
 import graph
 
-class myEnv(pettingzoo.AECEnv):        
+class myEnvironment(pettingzoo.AECEnv):        
     metadata = {"render_modes": ["human"], "name": "Patrolling Environment"}
     
     #General execution flow:
@@ -189,3 +189,13 @@ class myEnv(pettingzoo.AECEnv):
             "reward": reward,
             "done": done
         }
+        
+    def render(self, mode='human'):
+        #Render the graph
+        self.graph.render()
+        
+        #Render the current node
+        print("Current node: {}".format(self.current_node))
+        
+        #Render the number of steps passed since each target node (nodes with red color) has been visited
+        print("Idleness of target nodes: {}".format(self.target_nodes))

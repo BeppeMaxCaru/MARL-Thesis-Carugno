@@ -12,9 +12,14 @@ class Graph:
         for i in range(n):
             for j in range(m):
                 self.pos[i, j] = (i, j)
+        #Assign the positions the nodes in the graph
+        for node in self.G.nodes():
+            self.G.nodes[node]['position'] = self.pos[node]
+        #Randomize graph
         self.remove_random_nodes_and_edges(0.2)
+        #Randomize target nodes
         self.colour_targets_nodes(0.2)
-        self.draw()
+        #self.draw()
                 
     def remove_random_nodes_and_edges(self, p=0.5):
         nodes_to_remove = random.sample(list(self.G.nodes()), int(p * self.G.number_of_nodes()))
