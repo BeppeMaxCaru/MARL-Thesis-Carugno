@@ -1,1 +1,1 @@
-FlattenObservation
+MlpPolicy

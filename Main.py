@@ -5,6 +5,8 @@ import agent
 import gym
 from gym.utils.env_checker import check_env
 
+import stable_baselines3 as sb3
+
 #######################################################
 #Test on a basic gym environment
 
@@ -13,18 +15,29 @@ import GraphUsingGym_Environment as gymGraphEnv
 env = gymGraphEnv.GymGraphEnv()
 #Flatten observation space
 wrapped_env = gym.wrappers.FlattenObservation(env)
-
 check_env(wrapped_env)
 
-print("Hello World")
+#Test the above environment
+wrapped_env.reset()
 
+for i in range(25):
+    obs, reward, done, info = wrapped_env.step(wrapped_env.action_space.sample())
+    print(reward)
+    
+#print(wrapped_env.action_space.sample())
+#print(wrapped_env.observation_space.sample())
+
+#Train the agent with tensorboard logging
+#sb3.ppo.PPO("MlpPolicy", wrapped_env, verbose=1, tensorboard_log="log_folder_test/").learn(total_timesteps=10000)
+#Train the agent without tensorboard logging
+sb3.ppo.PPO("MlpPolicy", wrapped_env, verbose=1).learn(total_timesteps=10000)
 
 
 
 
 
 #############################################################
-
+"""
 #print("Hello World")
     
 #Generate graph
@@ -58,3 +71,5 @@ patroller = env.add_agent(patroller)
 
 #Train the agent
 patroller._train(env)
+
+"""

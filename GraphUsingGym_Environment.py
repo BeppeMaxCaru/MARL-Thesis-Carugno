@@ -98,7 +98,7 @@ class GymGraphEnv(gym.Env):
         if node_color == 'r':
             self.target_nodes[self.current_agent_node] = 0
         
-        #Continue simulation for 100 steps
+        #Continue simulation for X steps
         if self.steps >= 100:
             done = True
         else:
@@ -108,11 +108,17 @@ class GymGraphEnv(gym.Env):
         #reward is the total number of steps passed since each target node (nodes with red color) has been visited
         #reward is negative to encourage the agent to visit all target nodes and
         #not just the ones that have been visited the longest
-        reward = - sum(self.target_nodes_idleness.values()) - len([node for node in self.target_nodes if self.target_nodes_idleness[node] == 0])
+        # Calculate the reward for each target node based on its idleness
+        reward_part1 = -sum(min(10, idleness) for idleness in self.target_nodes_idleness.values())
+        # Penalty for not visiting any of the target nodes
+        reward_part2 = -len([node for node in self.target_nodes if self.target_nodes_idleness[node] == 0])
+    
+        reward = max(reward_part1 + reward_part2, -10)
+        
+        # Increase idleness of all target nodes by 1
+        self.target_nodes_idleness = {node: idleness + 1 for node, idleness in self.target_nodes_idleness.items()}
             
-        #Update the number of steps passed since each target node (nodes with red color) has been visited
-        #Increase idleness of all target nodes by 1
-        self.target_nodes_idleness = {node: self.target_nodes_idleness[node] + 1 for node in self.target_nodes_idleness}
+        #self.target_nodes_idleness = {node: self.target_nodes_idleness[node] + 1 for node in self.target_nodes_idleness}
                 
         return self._get_obs(), reward, done, {}
                     
@@ -161,8 +167,17 @@ class GymGraphEnv(gym.Env):
         
         #self.temp_obs_space['target_nodes_positions'] = gym.spaces.Dict({node: gym.spaces.Box(low=np.array([0, 0]), high=np.array([self.graph.n, self.graph.m]), dtype=np.int32) for node in self.target_nodes})
 
+    def render(self, mode='human'):
+        #During the drawing of the graph, the agent's current node is highlighted in green
+        self.graph.G.nodes[self.current_agent_node]['color'] = 'green'
+        self.graph.draw()
+        #pass
+        
+    
+    
 #########################
 #Class testing
+"""
 env = GymGraphEnv()
 
 env.graph.draw()
@@ -172,5 +187,5 @@ print(env.observation_space)
 #Using wrapper to convert observation space to gym's format
 wrapped_env = gym.wrappers.FlattenObservation(env)
 check_env(wrapped_env)
-
+"""
         
