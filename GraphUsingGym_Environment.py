@@ -3,6 +3,9 @@ import graph
 import random
 import numpy as np
 
+from gym.utils.env_checker import check_env
+from gym.wrappers import FlattenObservation
+
 ########################
 #Class definition
 
@@ -12,7 +15,7 @@ class GymGraphEnv(gym.Env):
     def __init__(self, render_mode=None, size=10):
         
         self._setup_new_episode()
-        
+                
         #Action space is the number of possible moves from a node: "Stay", "Up", "Down", "Left", "Right"
         self.action_space = gym.spaces.Discrete(5)
         
@@ -30,8 +33,16 @@ class GymGraphEnv(gym.Env):
         self.clock = None
         
     def _get_obs(self):
+        #Return the updated observation space after the agent has moved
+        obs = {}
+        #Update agent node position using x,y coordinates in the graph and convert it from tuple to box space
+        obs["current_agent_node"] = np.array([self.current_agent_node[0], self.current_agent_node[1]])
+        #Use old targets nodes positions since targets are not moving
+        for i in range(len(self.target_nodes)):
+            obs["target_node_" + str(i) + "_position"] = np.array([self.target_nodes[i][0], self.target_nodes[i][1]])
+        #Convert the dictionary into a gym dictionary space
+        return obs
         
-        return {"agent": self.current_node, "targets": self.target_nodes_dict}
             
     def _get_info(self):
         #return {"distance": np.linalg.norm(self._agent_location - self._target_location, ord=1)}
@@ -47,7 +58,7 @@ class GymGraphEnv(gym.Env):
         if self.render_mode == "human":
             self._render_frame()
             
-        return observation#, info
+        return observation
     
     def step(self, action):
         
@@ -58,34 +69,34 @@ class GymGraphEnv(gym.Env):
         elif action == 1:
             #Move to the node above in the graph if edge going to it exists
             #Check if the node above exists and if there is an edge going to it
-            if (self.current_node[0] > 0) and (self.graph.G.has_edge(self.current_node, (self.current_node[0]-1, self.current_node[1]))):
+            if (self.current_agent_node[0] > 0) and (self.graph.G.has_edge(self.current_agent_node, (self.current_agent_node[0]-1, self.current_agent_node[1]))):
                 #Move to the node above
-                self.current_node = (self.current_node[0]-1, self.current_node[1])
+                self.current_agent_node = (self.current_agent_node[0]-1, self.current_agent_node[1])
         elif action == 2:
             #Move to the node down in the graph if edge exists
             #Check if the node below exists and if there is an edge going to it
-            if (self.current_node[0] < self.graph.n-1) and (self.graph.G.has_edge(self.current_node, (self.current_node[0]+1, self.current_node[1]))):
+            if (self.current_agent_node[0] < self.graph.n-1) and (self.graph.G.has_edge(self.current_agent_node, (self.current_agent_node[0]+1, self.current_agent_node[1]))):
                 #Move to the node below
-                self.current_node = (self.current_node[0]+1, self.current_node[1])
+                self.current_agent_node = (self.current_agent_node[0]+1, self.current_agent_node[1])
         elif action == 3:
             #Move to the node on the left in the graph if edge exists
             #Check if the node to the left exists and if there is an edge going to it
-            if (self.current_node[1] > 0) and (self.graph.G.has_edge(self.current_node, (self.current_node[0], self.current_node[1]-1))):
+            if (self.current_agent_node[1] > 0) and (self.graph.G.has_edge(self.current_agent_node, (self.current_agent_node[0], self.current_agent_node[1]-1))):
                 #Move to the node to the left
-                self.current_node = (self.current_node[0], self.current_node[1]-1)
+                self.current_agent_node = (self.current_agent_node[0], self.current_agent_node[1]-1)
         elif action == 4:
             #Move to the node on the right in the graph if edge exists
             #Check if the node to the right exists and if there is an edge going to it
-            if (self.current_node[1] < self.graph.m-1) and (self.graph.G.has_edge(self.current_node, (self.current_node[0], self.current_node[1]+1))):
+            if (self.current_agent_node[1] < self.graph.m-1) and (self.graph.G.has_edge(self.current_agent_node, (self.current_agent_node[0], self.current_agent_node[1]+1))):
                 #Move to the node to the right
-                self.current_node = (self.current_node[0], self.current_node[1]+1)
+                self.current_agent_node = (self.current_agent_node[0], self.current_agent_node[1]+1)
         else:
             #Invalid action
             raise ValueError("Invalid action: {}".format(action))
         
-        node_color = self.graph.G.nodes[self.current_node]['color']
+        node_color = self.graph.G.nodes[self.current_agent_node]['color']
         if node_color == 'r':
-            self.target_nodes[self.current_node] = 0
+            self.target_nodes[self.current_agent_node] = 0
         
         #Continue simulation for 100 steps
         if self.steps >= 100:
@@ -97,23 +108,14 @@ class GymGraphEnv(gym.Env):
         #reward is the total number of steps passed since each target node (nodes with red color) has been visited
         #reward is negative to encourage the agent to visit all target nodes and
         #not just the ones that have been visited the longest
-        reward = - self.total_idleness() - len([node for node in self.target_nodes if self.target_nodes_idleness[node] == 0])
+        reward = - sum(self.target_nodes_idleness.values()) - len([node for node in self.target_nodes if self.target_nodes_idleness[node] == 0])
             
         #Update the number of steps passed since each target node (nodes with red color) has been visited
         #Increase idleness of all target nodes by 1
         self.target_nodes_idleness = {node: self.target_nodes_idleness[node] + 1 for node in self.target_nodes_idleness}
-        
-        return {
-            #observation is a list of the number of steps passed since each target node (nodes with red color) has been visited
-            "observation": [self.target_nodes[node] for node in self.target_nodes],
-            "reward": reward,
-            "done": done
-        }
-        
-    def total_idleness(self):
-        return sum(self.target_nodes.values())
-    
-    
+                
+        return self._get_obs(), reward, done, {}
+                    
     def _setup_new_episode(self):
         
         #Per ogni episodio servono:
@@ -140,12 +142,24 @@ class GymGraphEnv(gym.Env):
         #Determine the position of each target node and assign it to a dictionary for gym observation space
         self.target_nodes_positions_dict = {node: self.graph.G.nodes[node]['position'] for node in self.target_nodes}
         
+        #Set target nodes idleness to 0
+        self.target_nodes_idleness = {node: 0 for node in self.target_nodes}
+        
+        #Create dictionary to convert node to index
+        self.node_to_index = {node: index for index, node in enumerate(self.graph.G.nodes)}
+        
+        #print ("New episode started")
+        
         #Adapt graph to gym's observation space format:
         self.observation_space = gym.spaces.Dict()
-        #1) Convert agent's node position to a key
-        self.observation_space['agent_node'] = gym.spaces.Discrete(len(self.graph.G.nodes))
-        #2) Add all target nodes positions to the observation space
-        self.observation_space['targets_nodes'] = gym.spaces.Dict({node: gym.spaces.Discrete(len(self.graph.G.nodes)) for node in self.target_nodes_positions_dict})
+        #1) Add the position of the agent node to the observation space as x, y coordinates in the graph
+        self.observation_space['current_agent_node'] = gym.spaces.Box(low=np.array([0, 0]), high=np.array([self.graph.n, self.graph.m]), dtype=np.int32)
+        #2) Add the position of each target node to the observation space as x, y coordinates in the graph
+        for i, node in enumerate(self.target_nodes):
+            dictionary_key = 'target_node_' + str(i) + '_position'
+            self.observation_space[dictionary_key] = gym.spaces.Box(low=np.array([0, 0]), high=np.array([self.graph.n, self.graph.m]), dtype=np.int32)           
+        
+        #self.temp_obs_space['target_nodes_positions'] = gym.spaces.Dict({node: gym.spaces.Box(low=np.array([0, 0]), high=np.array([self.graph.n, self.graph.m]), dtype=np.int32) for node in self.target_nodes})
 
 #########################
 #Class testing
@@ -153,7 +167,10 @@ env = GymGraphEnv()
 
 env.graph.draw()
 
-print(env.current_agent_node)
 print(env.observation_space)
+
+#Using wrapper to convert observation space to gym's format
+wrapped_env = gym.wrappers.FlattenObservation(env)
+check_env(wrapped_env)
 
         
