@@ -6,10 +6,12 @@ import gym
 from gym.utils.env_checker import check_env
 
 import stable_baselines3 as sb3
+import MARLlib
+import ray
+import rllib
 
 #######################################################
-#Test on a basic gym environment
-
+#Test on the basic gym environment -> no multi agent pettingzoo environment
 import GraphUsingGym_Environment as gymGraphEnv
 
 env = gymGraphEnv.GymGraphEnv()
@@ -22,7 +24,7 @@ wrapped_env.reset()
 
 for i in range(25):
     obs, reward, done, info = wrapped_env.step(wrapped_env.action_space.sample())
-    print(reward)
+    #print(reward)
     
 #print(wrapped_env.action_space.sample())
 #print(wrapped_env.observation_space.sample())
@@ -32,9 +34,38 @@ for i in range(25):
 #Train the agent without tensorboard logging
 sb3.ppo.PPO("MlpPolicy", wrapped_env, verbose=1).learn(total_timesteps=10000)
 
+#Test the agent for 10 episodes
+"""
+model = sb3.ppo.PPO("MlpPolicy", wrapped_env, verbose=1).learn(total_timesteps=10000)
 
+episodes = 10
+for i in range(episodes):
+    obs = wrapped_env.reset()
+    done = False
+    while not done:
+        action, _states = model.predict(obs, deterministic=True)
+        obs, rewards, done, info = wrapped_env.step(action)
+        #wrapped_env.render()
+"""        
 
+##################################################
+#Using MARLlib for multi agents
 
+"""
+#Train the agent with MARLlib for 1000 iterations
+ray.init()
+trainer = (
+    ray.algorithms.ppo.PPOConfig()
+    .rollouts(num_rollout_workers=1)
+    .resources(num_cpus_for_local_worker=1)
+    .env(wrapped_env)
+    .build()
+)
+
+for i in range(1000):
+    trainer.train()
+
+"""
 
 #############################################################
 """

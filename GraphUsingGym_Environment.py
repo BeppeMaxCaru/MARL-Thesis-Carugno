@@ -98,12 +98,15 @@ class GymGraphEnv(gym.Env):
         if node_color == 'r':
             self.target_nodes[self.current_agent_node] = 0
         
-        #Continue simulation for X steps
+        #Continue simulation for X steps and then reset the environment
+        #Self.steps defines an episode length
         if self.steps >= 100:
             done = True
         else:
             done = False
             self.steps += 1
+        #Otherwise use a different stopping condition for the boolean done variable
+        
         
         #reward is the total number of steps passed since each target node (nodes with red color) has been visited
         #reward is negative to encourage the agent to visit all target nodes and
