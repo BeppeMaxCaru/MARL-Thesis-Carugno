@@ -15,16 +15,21 @@ import rllib
 import GraphUsingGym_Environment as gymGraphEnv
 
 env = gymGraphEnv.GymGraphEnv()
+
+print(env.observation_space)
+
 #Flatten observation space
 wrapped_env = gym.wrappers.FlattenObservation(env)
 check_env(wrapped_env)
 
-#Test the above environment
-wrapped_env.reset()
+#Test with normal environment
+env.reset()
 
-for i in range(25):
-    obs, reward, done, info = wrapped_env.step(wrapped_env.action_space.sample())
-    #print(reward)
+for i in range(250):
+    obs, reward, done, info = env.step(env.action_space.sample())
+    print(reward)
+    #Print also agent position
+    print(env.current_agent_node)
     
 #print(wrapped_env.action_space.sample())
 #print(wrapped_env.observation_space.sample())
@@ -32,7 +37,17 @@ for i in range(25):
 #Train the agent with tensorboard logging
 #sb3.ppo.PPO("MlpPolicy", wrapped_env, verbose=1, tensorboard_log="log_folder_test/").learn(total_timesteps=10000)
 #Train the agent without tensorboard logging
+sb3.ppo.PPO("MultiInputPolicy", env, verbose=1, tensorboard_log="log_folder_test/").learn(total_timesteps=100000)
+
+#Test with environment with flattened observation space
+"""
+wrapped_env.reset()
+for i in range(250):
+    obs, reward, done, info = wrapped_env.step(wrapped_env.action_space.sample())
+    print(reward)
+    
 sb3.ppo.PPO("MlpPolicy", wrapped_env, verbose=1).learn(total_timesteps=10000)
+"""
 
 #Test the agent for 10 episodes
 """

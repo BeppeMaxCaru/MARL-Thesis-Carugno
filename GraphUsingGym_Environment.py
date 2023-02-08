@@ -100,14 +100,14 @@ class GymGraphEnv(gym.Env):
         
         #Continue simulation for X steps and then reset the environment
         #Self.steps defines an episode length
-        if self.steps >= 100:
+        if self.steps >= 10000:
             done = True
         else:
             done = False
             self.steps += 1
         #Otherwise use a different stopping condition for the boolean done variable
         
-        
+        """
         #reward is the total number of steps passed since each target node (nodes with red color) has been visited
         #reward is negative to encourage the agent to visit all target nodes and
         #not just the ones that have been visited the longest
@@ -117,6 +117,12 @@ class GymGraphEnv(gym.Env):
         reward_part2 = -len([node for node in self.target_nodes if self.target_nodes_idleness[node] == 0])
     
         reward = max(reward_part1 + reward_part2, -10)
+        """
+        
+        #Simple reward function for testing
+        #0 if agent is not on a target node, 1 if it is but it is not the same node as the previous step
+        reward = 0 if self.current_agent_node not in self.target_nodes else 1 if self.current_agent_node != self.previous_agent_node else 0
+        self.previous_agent_node = self.current_agent_node
         
         # Increase idleness of all target nodes by 1
         self.target_nodes_idleness = {node: idleness + 1 for node, idleness in self.target_nodes_idleness.items()}
@@ -146,6 +152,9 @@ class GymGraphEnv(gym.Env):
         
         #Select new random node as the agent's starting location
         self.current_agent_node = random.choice(list(self.graph.G.nodes))
+        
+        self.previous_agent_node = self.current_agent_node
+        
         #Retrieve new list of target nodes (nodes with red color)
         self.target_nodes = [node for node in self.graph.G.nodes if self.graph.G.nodes[node]['color'] == 'red']
         #Determine the position of each target node and assign it to a dictionary for gym observation space
