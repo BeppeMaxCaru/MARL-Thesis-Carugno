@@ -9,6 +9,7 @@ import stable_baselines3 as sb3
 import MARLlib
 import ray
 import rllib
+from ray.rllib.algorithms import ppo
 
 #######################################################
 #Test on the basic gym environment -> no multi agent pettingzoo environment
@@ -25,7 +26,7 @@ check_env(wrapped_env)
 #Test with normal environment
 env.reset()
 
-for i in range(250):
+for i in range(25):
     obs, reward, done, info = env.step(env.action_space.sample())
     print(reward)
     #Print also agent position
@@ -37,7 +38,25 @@ for i in range(250):
 #Train the agent with tensorboard logging
 #sb3.ppo.PPO("MlpPolicy", wrapped_env, verbose=1, tensorboard_log="log_folder_test/").learn(total_timesteps=10000)
 #Train the agent without tensorboard logging
-sb3.ppo.PPO("MultiInputPolicy", env, verbose=1, tensorboard_log="log_folder_test/").learn(total_timesteps=100000)
+#sb3.ppo.PPO("MultiInputPolicy", env, verbose=1, tensorboard_log="log_folder_test_gym/").learn(total_timesteps=100000)
+
+
+########################################
+#Test using ray rllib -> working!
+ray.init()
+
+config = ppo.PPOConfig()
+
+print(config.to_dict())
+
+algo = config.build(env=gymGraphEnv.GymGraphEnv)
+
+for i in range(10):
+    print(algo.train())
+
+
+#########################################
+
 
 #Test with environment with flattened observation space
 """

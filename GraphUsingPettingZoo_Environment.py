@@ -1,15 +1,16 @@
-import gym
+import gymnasium as gym
+import pettingzoo
 import graph
-import random
 import numpy as np
+import random
 
 from gym.utils.env_checker import check_env
-from gym.wrappers import FlattenObservation
 
-########################
-#Class definition
+import stable_baselines3 as sb3
 
-class GymGraphEnv(gym.Env):
+from stable_baselines3.common.env_checker import check_env
+
+class PettingZooGraphEnv(pettingzoo.AECEnv):
     metadata = {"render_modes": ["human"], "render_fps": 15}
     
     def __init__(self, render_mode=None, size=10):
@@ -19,11 +20,7 @@ class GymGraphEnv(gym.Env):
         #Action space is the number of possible moves from a node: "Stay", "Up", "Down", "Left", "Right"
         self.action_space = gym.spaces.Discrete(5)
         
-        #Check that the render is either None or a valid render mode from the metadata
-        #otherwise assign it to None for safety
-        if render_mode is not None and render_mode not in self.metadata["render_modes"]:
-            #If the render mode is not valid assign it to None for safety
-            render_mode = None
+        assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
         
         """
@@ -46,8 +43,7 @@ class GymGraphEnv(gym.Env):
             obs["target_node_" + str(i) + "_position"] = np.array([self.target_nodes[i][0], self.target_nodes[i][1]])
         #Convert the dictionary into a gym dictionary space
         return obs
-        
-            
+    
     def _get_info(self):
         #return {"distance": np.linalg.norm(self._agent_location - self._target_location, ord=1)}
         pass
@@ -134,7 +130,7 @@ class GymGraphEnv(gym.Env):
         #self.target_nodes_idleness = {node: self.target_nodes_idleness[node] + 1 for node in self.target_nodes_idleness}
                 
         return self._get_obs(), reward, done, {}
-                    
+    
     def _setup_new_episode(self):
         
         #Per ogni episodio servono:
@@ -189,19 +185,39 @@ class GymGraphEnv(gym.Env):
         self.graph.draw()
         #pass
         
-    
-    
+
 #########################
 #Class testing
 """
-env = GymGraphEnv()
+env = PettingZooGraphEnv()
 
 env.graph.draw()
 
 print(env.observation_space)
 
 #Using wrapper to convert observation space to gym's format
-wrapped_env = gym.wrappers.FlattenObservation(env)
-check_env(wrapped_env)
+check_env(env)
 """
-        
+
+env = PettingZooGraphEnv()
+#env.graph.draw()
+
+print(env.observation_space)
+
+env.reset()
+
+#Test the pettingzoo environment
+for i in range(250):
+    obs, reward, done, info = env.step(env.action_space.sample())
+    print("Step: {}, Reward: {}, Done: {}".format(i, reward, done))
+    print("Current agent node: {}".format(env.current_agent_node))
+
+#check_env(env)
+
+#Test the PPO algorithm on the pettingzoo environment
+sb3.ppo.PPO("MultiInputPolicy", env, verbose=1, tensorboard_log="log_folder_test_pettingzoo/").learn(total_timesteps=10000)
+    
+
+
+
+
