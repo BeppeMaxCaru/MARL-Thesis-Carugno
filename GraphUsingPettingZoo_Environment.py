@@ -165,6 +165,12 @@ class PettingZooGraphEnv(pettingzoo.AECEnv):
         #Get the current agent
         agent = self.agent_selection
         
+        # the agent which stepped last had its _cumulative_rewards accounted for
+        # (because it was returned by last()), so the _cumulative_rewards for this
+        # agent should start again at 0
+        self._cumulative_rewards[agent] = 0
+        #self.rewards = {agent: 0 for agent in self.agents}
+        
         #Get the current agent location and the previous location
         self.current_agent_node = self.agents_locations[agent]
         self.previous_agent_node = self.current_agent_node
@@ -220,21 +226,34 @@ class PettingZooGraphEnv(pettingzoo.AECEnv):
         
         #Update cumulative rewards if it is the last agent of the current pass of agents actions
         if self._agent_selector.is_last():
-            ...
+            
             #If the agent is the last one to act increase the target nodes idleness before the new agents actions round
             #Increase idleness of all target nodes by 1
             self.target_nodes_idleness = {node: idleness + 1 for node, idleness in self.target_nodes_idleness.items()}
 
-            #Add the agents rewards of this pass to the cumulative rewards of the agents for current episode
+            # Accumulate rewards from the rewards dictionary into the cumulative rewards dictionary
+            #for agent, reward in self.rewards.items():
+            #    self._cumulative_rewards[agent] += reward
             self._accumulate_rewards()
+            
+            print("Agent reward: {}".format(self.rewards[agent]))
+            print("Rewards: {}".format(self.rewards))
+            print("Cumulative rewards: {}".format(self._cumulative_rewards))
+                        
             #Clear rewards dictionary for the next pass of agents actions
-            self._clear_rewards() 
-        else:
-            #If the agent is not the last one to act no need to increase the target nodes idleness
-            pass
-        
+            #self._clear_rewards()
+            #After last agent has acted, update rewards and cumulative rewards dictionary
+            self.rewards = {agent: 0 for agent in self.agents}
+            self._cumulative_rewards = {agent: 0 for agent in self.agents}
+            
         #Select the next agent
         self.agent_selection = self._agent_selector.next()
+        
+        #Clear rewards dictionary for reward calculation of the next agent
+        #self.rewards = {agent: 0 for agent in self.agents}
+        
+        #Update cumulative rewards if it is the last agent of the current pass of agents actions
+        #self._accumulate_rewards()
     
     #Pettingzoo version of the setup_new_episode function
     def setup_new_graph(self):
@@ -302,15 +321,17 @@ env = PettingZooGraphEnv()
 
 env.reset()
 
-print(env.possible_agents)
-print(env.agents)
-print(env.observation_spaces)
-print(env.action_spaces)
+#print(env.possible_agents)
+#print(env.agents)
+#print(env.observation_spaces)
+#print(env.action_spaces)
 
 api_test(env, num_cycles=10, verbose_progress=True)
 
+print("Starting test of the environment...")
+
 #Test the environment
-for i in range(10):
+for i in range(25):
     #Current agent position
     current_agent_position = env.agents_locations[env.agent_selection]
     print("Current agent position: {}".format(current_agent_position))
@@ -327,25 +348,33 @@ for i in range(10):
     #Reward obtained by agent
     reward = env.rewards[current_agent]
     print("Reward: {}".format(reward))
+    #Cumuative reward obtained by agent
+    cum_reward = env._cumulative_rewards[current_agent]
+    print("Cumulative reward: {}".format(cum_reward))
     #New agent position
     current_agent_position = env.agents_locations[env.agent_selection]
     print("New agent position: {}".format(current_agent_position))
     print("#############################################")
 
+
 """
 #Test with ray rllib
 ray.init()
 
-#Convert pettingzoo environment to rllib environment
+#Convert pettingzoo environment to ray comaptible environment
 env_creator = lambda config: PettingZooGraphEnv()
-register_env("pettingzoo_graph_env", lambda config: PettingZooEnv(env_creator(config)))
+#register_env("pettingzoo_graph_env", lambda config: PettingZooEnv(env_creator(config)))
 
 config = ppo.PPOConfig()
 
-print(config.to_dict())
+#Convert PettingZooGraphEnv to ray compatible environment
+ray_env = PettingZooEnv(env_creator(config))
 
-algo = config.build(env="pettingzoo_graph_env")
+#print(config.to_dict())
 
+algo = config.build(env=ray_env)
+"""
+"""
 for i in range(10):
     print(algo.train())
 """
