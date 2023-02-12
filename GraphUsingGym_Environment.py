@@ -100,7 +100,7 @@ class GymGraphEnv(gym.Env):
         
         node_color = self.graph.G.nodes[self.current_agent_node]['color']
         if node_color == 'r':
-            self.target_nodes[self.current_agent_node] = 0
+            self.target_nodes_idleness[self.current_agent_node] = 0
         
         #Continue simulation for X steps and then reset the environment
         #Self.steps defines an episode length

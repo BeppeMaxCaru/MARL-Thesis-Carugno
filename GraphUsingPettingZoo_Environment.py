@@ -165,32 +165,6 @@ class PettingZooGraphEnv(pettingzoo.AECEnv):
         #Get the current agent
         agent = self.agent_selection
         
-        """
-        # the agent which stepped last had its _cumulative_rewards accounted for
-        # (because it was returned by last()), so the _cumulative_rewards for this
-        # agent should start again at 0
-        self._cumulative_rewards[agent] = 0
-        
-        # collect reward if it is the last agent to act
-        if self._agent_selector.is_last():
-            # rewards for all agents are placed in the .rewards dictionary
-            ...
-
-            # observe the current state
-            for i in self.agents:
-                self.observations[i] = self.state[
-                    self.agents[1 - self.agent_name_mapping[i]]
-                ]
-        else:
-            # necessary so that observe() returns a reasonable observation at all times.
-            self.state[self.agents[1 - self.agent_name_mapping[agent]]] = NONE
-            # no rewards are allocated until both players give an action
-            self._clear_rewards()
-        
-        # stores action of current agent
-        self.state[self.agent_selection] = action
-        """
-        
         #Get the current agent location and the previous location
         self.current_agent_node = self.agents_locations[agent]
         self.previous_agent_node = self.current_agent_node
@@ -227,32 +201,40 @@ class PettingZooGraphEnv(pettingzoo.AECEnv):
             #Invalid action
             raise ValueError("Invalid action: {}".format(action))
         
+        #Check if the agent is on a target node and if it is reducr its idleness to 0
         node_color = self.graph.G.nodes[self.current_agent_node]['color']
         if node_color == 'r':
-            self.target_nodes[self.current_agent_node] = 0
+            #If the agent is on a red node, reset its idleness to 0
+            self.target_nodes_idleness[self.current_agent_node] = 0
         
         #Simple reward function for testing
         #0 if agent is not on a target node, 1 if it is but it is not the same node as the previous step
         reward = 0 if self.current_agent_node not in self.target_nodes else 1 if self.current_agent_node != self.previous_agent_node else 0
         self.previous_agent_node = self.current_agent_node
+        #Update the reward for the current agent during this pass of agents actions
         self.rewards[agent] = reward
         
         #Update agent locations
         self.agents_locations[agent] = self.current_agent_node
         self.agents_previous_locations[agent] = self.previous_agent_node
         
-        #Update the observation space for the current agent
-        #The only thing that changes is the agent location since target nodes locations are static
-        #self.observation_spaces[agent]['current_agent_node_location']._value = np.array([self.current_agent_node[0], self.current_agent_node[1]])
-                
-        #If the agent is the last one to act increase the target nodes idleness before the new agents actions round
-        # Increase idleness of all target nodes by 1
-        self.target_nodes_idleness = {node: idleness + 1 for node, idleness in self.target_nodes_idleness.items()}
+        #Update cumulative rewards if it is the last agent of the current pass of agents actions
+        if self._agent_selector.is_last():
+            ...
+            #If the agent is the last one to act increase the target nodes idleness before the new agents actions round
+            #Increase idleness of all target nodes by 1
+            self.target_nodes_idleness = {node: idleness + 1 for node, idleness in self.target_nodes_idleness.items()}
+
+            #Add the agents rewards of this pass to the cumulative rewards of the agents for current episode
+            self._accumulate_rewards()
+            #Clear rewards dictionary for the next pass of agents actions
+            self._clear_rewards() 
+        else:
+            #If the agent is not the last one to act no need to increase the target nodes idleness
+            pass
         
         #Select the next agent
         self.agent_selection = self._agent_selector.next()
-        #Adds the reward to the cumulative reward of the agent
-        self._accumulate_rewards()
     
     #Pettingzoo version of the setup_new_episode function
     def setup_new_graph(self):
@@ -325,8 +307,7 @@ print(env.agents)
 print(env.observation_spaces)
 print(env.action_spaces)
 
-api_test(env, num_cycles=1, verbose_progress=True)
-
+api_test(env, num_cycles=10, verbose_progress=True)
 
 #Test the environment
 for i in range(10):
