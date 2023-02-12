@@ -165,12 +165,20 @@ class PettingZooGraphEnv(pettingzoo.AECEnv):
         #Get the current agent
         agent = self.agent_selection
         
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        """
+        last(observe=True) returns observation, reward, done, and info for the agent 
+        currently able to act. The returned reward is the cumulative reward that the 
+        agent has received since it last acted. If observe is set to False, the 
+        observation will not be computed, and None will be returned in its place. 
+        Note that a single agent being done does not imply the environment is done.
+        """
         # the agent which stepped last had its _cumulative_rewards accounted for
         # (because it was returned by last()), so the _cumulative_rewards for this
         # agent should start again at 0
         self._cumulative_rewards[agent] = 0
-        #self.rewards = {agent: 0 for agent in self.agents}
-        
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                
         #Get the current agent location and the previous location
         self.current_agent_node = self.agents_locations[agent]
         self.previous_agent_node = self.current_agent_node
@@ -217,8 +225,16 @@ class PettingZooGraphEnv(pettingzoo.AECEnv):
         #0 if agent is not on a target node, 1 if it is but it is not the same node as the previous step
         reward = 0 if self.current_agent_node not in self.target_nodes else 1 if self.current_agent_node != self.previous_agent_node else 0
         self.previous_agent_node = self.current_agent_node
-        #Update the reward for the current agent during this pass of agents actions
-        self.rewards[agent] = reward
+        #Update the integer reward for the current agent during this pass of agents actions
+        self.rewards = {agent: 0 for agent in self.agents}
+        self.rewards[agent] = self.rewards.get(agent, 0) + reward
+        #self.rewards[agent] = reward        
+        
+        self._accumulate_rewards()
+        
+        print("Agents: {}, Reward: {}".format(self.agents, reward))
+        print("Agents: {}, Reward dict values: {}".format(self.agents, self.rewards))
+        print("Agents: {}, Cumulative rewards: {}".format(self.agents, self._cumulative_rewards))
         
         #Update agent locations
         self.agents_locations[agent] = self.current_agent_node
@@ -230,21 +246,16 @@ class PettingZooGraphEnv(pettingzoo.AECEnv):
             #If the agent is the last one to act increase the target nodes idleness before the new agents actions round
             #Increase idleness of all target nodes by 1
             self.target_nodes_idleness = {node: idleness + 1 for node, idleness in self.target_nodes_idleness.items()}
-
-            # Accumulate rewards from the rewards dictionary into the cumulative rewards dictionary
-            #for agent, reward in self.rewards.items():
-            #    self._cumulative_rewards[agent] += reward
-            self._accumulate_rewards()
-            
-            print("Agent reward: {}".format(self.rewards[agent]))
-            print("Rewards: {}".format(self.rewards))
-            print("Cumulative rewards: {}".format(self._cumulative_rewards))
                         
             #Clear rewards dictionary for the next pass of agents actions
             #self._clear_rewards()
             #After last agent has acted, update rewards and cumulative rewards dictionary
-            self.rewards = {agent: 0 for agent in self.agents}
-            self._cumulative_rewards = {agent: 0 for agent in self.agents}
+            #self.rewards = {agent: 0 for agent in self.agents}
+            #self._cumulative_rewards = {agent: 0 for agent in self.agents}
+        """
+        else:
+            self._clear_rewards()
+        """
             
         #Select the next agent
         self.agent_selection = self._agent_selector.next()
@@ -326,10 +337,12 @@ env.reset()
 #print(env.observation_spaces)
 #print(env.action_spaces)
 
-api_test(env, num_cycles=10, verbose_progress=True)
+for i in range(10):
+    api_test(env, num_cycles=10, verbose_progress=True)
 
 print("Starting test of the environment...")
 
+"""
 #Test the environment
 for i in range(25):
     #Current agent position
@@ -355,6 +368,7 @@ for i in range(25):
     current_agent_position = env.agents_locations[env.agent_selection]
     print("New agent position: {}".format(current_agent_position))
     print("#############################################")
+"""
 
 
 """
