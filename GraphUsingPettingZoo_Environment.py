@@ -226,10 +226,11 @@ class PettingZooGraphEnv(pettingzoo.AECEnv):
         reward = 0 if self.current_agent_node not in self.target_nodes else 1 if self.current_agent_node != self.previous_agent_node else 0
         self.previous_agent_node = self.current_agent_node
         #Update the integer reward for the current agent during this pass of agents actions
-        self.rewards = {agent: 0 for agent in self.agents}
+        #self.rewards = {agent: 0 for agent in self.agents}
         self.rewards[agent] = self.rewards.get(agent, 0) + reward
         #self.rewards[agent] = reward        
         
+        #Update cumulative rewards if it is the last agent of the current pass of agents actions
         self._accumulate_rewards()
         
         print("Agents: {}, Reward: {}".format(self.agents, reward))
@@ -260,12 +261,6 @@ class PettingZooGraphEnv(pettingzoo.AECEnv):
         #Select the next agent
         self.agent_selection = self._agent_selector.next()
         
-        #Clear rewards dictionary for reward calculation of the next agent
-        #self.rewards = {agent: 0 for agent in self.agents}
-        
-        #Update cumulative rewards if it is the last agent of the current pass of agents actions
-        #self._accumulate_rewards()
-    
     #Pettingzoo version of the setup_new_episode function
     def setup_new_graph(self):
         #Per ogni episodio:
@@ -370,25 +365,18 @@ for i in range(25):
     print("#############################################")
 """
 
-
-"""
 #Test with ray rllib
 ray.init()
 
 #Convert pettingzoo environment to ray comaptible environment
 env_creator = lambda config: PettingZooGraphEnv()
-#register_env("pettingzoo_graph_env", lambda config: PettingZooEnv(env_creator(config)))
+register_env("pettingzoo_graph_env", lambda config: PettingZooEnv(env_creator(config)))
 
 config = ppo.PPOConfig()
 
-#Convert PettingZooGraphEnv to ray compatible environment
-ray_env = PettingZooEnv(env_creator(config))
-
-#print(config.to_dict())
-
-algo = config.build(env=ray_env)
+algo = config.build(env="pettingzoo_graph_env")
 """
 """
 for i in range(10):
     print(algo.train())
-"""
+
