@@ -20,18 +20,30 @@ env = gymGraphEnv.GymGraphEnv()
 print(env.observation_space)
 
 #Flatten observation space
-wrapped_env = gym.wrappers.FlattenObservation(env)
+#wrapped_env = gym.wrappers.FlattenObservation(env)
+wrapped_env = env
 check_env(wrapped_env)
 
 #Test with normal environment
 env.reset()
 
 for i in range(25):
+    #Save previous node to print transition
+    previous_agent_node = str(env.current_agent_node)
+    #Action
     obs, reward, done, info = env.step(env.action_space.sample())
-    print(reward)
-    #Print also agent position
-    print(env.current_agent_node)
-    
+    #Print also action result
+    current_agent_node = str(env.current_agent_node)
+    agent_reward = str(reward)
+    print("Movement from node: " + previous_agent_node + 
+          " to node: " + current_agent_node +
+          " with a reward of: " + agent_reward)
+
+env.graph.draw()
+
+print("Setup and checks completed succesfully")
+print("######################################")
+
 #print(wrapped_env.action_space.sample())
 #print(wrapped_env.observation_space.sample())
 
@@ -40,6 +52,8 @@ for i in range(25):
 #Train the agent without tensorboard logging
 #sb3.ppo.PPO("MultiInputPolicy", env, verbose=1, tensorboard_log="log_folder_test_gym/").learn(total_timesteps=100000)
 
+
+"""
 
 ########################################
 #Test using ray rllib -> working!
@@ -55,32 +69,57 @@ for i in range(10):
     print(algo.train())
 
 
+"""
 #########################################
+print("Graph check")
+wrapped_env.graph.draw()
 
+#Pick algo and model
+print("Model selection")
+model = sb3.ppo.PPO("MultiInputPolicy", wrapped_env, verbose=1)
+#Train model
+print("Training the model")
+model.learn(total_timesteps=1000)
 
-#Test with environment with flattened observation space
-"""
-wrapped_env.reset()
-for i in range(250):
-    obs, reward, done, info = wrapped_env.step(wrapped_env.action_space.sample())
-    print(reward)
-    
-sb3.ppo.PPO("MlpPolicy", wrapped_env, verbose=1).learn(total_timesteps=10000)
-"""
+#Evaluate policy
+print("Evaluating policy")
+#NB The policy is stored into the model and it is accessible through:
+#policy = model.policy -> it is the value of the weights of the underlying neural network
+#and it can be exported and manipulated using either TensorFlow or PyTorch in Stable Baselines
+#however the suggested way is using PyTorch according to the documentation
+mean_reward, std_reward = sb3.common.evaluation.evaluate_policy(model, model.get_env(), n_eval_episodes=10)
+#Alternative method to evaluate the policy:
+#policy = model.policy
+#mean_reward, std_reward = sb3.common.evaluation.evaluate_policy(policy, model.get_env(), n_eval_episodes=10)
+print("Mean reward: " + str(mean_reward))
+print("Std reward: " + str(std_reward))
 
-#Test the agent for 10 episodes
-"""
-model = sb3.ppo.PPO("MlpPolicy", wrapped_env, verbose=1).learn(total_timesteps=10000)
+print(model.policy)
 
-episodes = 10
+print("Testing the model")
+#Test model
+model_env = model.get_env()
+obs = model_env.reset()
+episodes = 50
 for i in range(episodes):
-    obs = wrapped_env.reset()
-    done = False
-    while not done:
-        action, _states = model.predict(obs, deterministic=True)
-        obs, rewards, done, info = wrapped_env.step(action)
-        #wrapped_env.render()
-"""        
+    #obs = wrapped_env.reset()
+    #done = False
+    
+    previous_agent_node = str(obs['current_agent_node'])[1:6]
+    
+    #while not done:
+    action, _states = model.predict(obs, deterministic=True)
+    obs, rewards, done, info = model_env.step(action)
+    
+    current_agent_node = str(obs['current_agent_node'])[1:6]
+    
+    print("Agent moves from: " + previous_agent_node +
+          " to: " + current_agent_node +
+          " with reward: " + str(rewards))
+    #wrapped_env.render()
+    
+    #if done:
+    #    obs = model_env.reset()
 
 ##################################################
 #Using MARLlib for multi agents
@@ -103,7 +142,6 @@ for i in range(1000):
 
 #############################################################
 """
-#print("Hello World")
     
 #Generate graph
 #Uncomment this line to test graph generation

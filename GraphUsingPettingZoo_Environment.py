@@ -18,8 +18,10 @@ from pettingzoo.utils import agent_selector
 
 import ray
 from ray.tune.registry import register_env
-from ray.rllib.env import PettingZooEnv
+#from ray.rllib.env import PettingZooEnv
 from ray.rllib.algorithms import ppo
+from ray.rllib.env.wrappers.pettingzoo_env import PettingZooEnv
+from ray.rllib.agents.ppo import PPOTrainer
 
 #Not paraller version
 class PettingZooGraphEnv(pettingzoo.AECEnv):
@@ -31,6 +33,8 @@ class PettingZooGraphEnv(pettingzoo.AECEnv):
     """
     
     metadata = {"render_modes": ["human"], "render_fps": 15}
+    
+    #observation_space = {}
     
     def __init__(self, render_mode=None, size=10, num_patrollers=1, num_attackers=0):
         """
@@ -64,7 +68,7 @@ class PettingZooGraphEnv(pettingzoo.AECEnv):
             zip(self.possible_agents, list(range(len(self.possible_agents))))
         )
                 
-        #Observation spaes
+        #Observation spaces
         self.observation_spaces = {
             agent: gym.spaces.Dict() for agent in self.possible_agents
         }
@@ -365,18 +369,80 @@ for i in range(25):
     print("#############################################")
 """
 
+print("Test with ray")
 #Test with ray rllib
-ray.init()
+#ray.init()
 
-#Convert pettingzoo environment to ray comaptible environment
-env_creator = lambda config: PettingZooGraphEnv()
-register_env("pettingzoo_graph_env", lambda config: PettingZooEnv(env_creator(config)))
 
-config = ppo.PPOConfig()
 
-algo = config.build(env="pettingzoo_graph_env")
+#########################################
 """
+if __name__ == '__main__':
+    
+    def env_creator(args):
+        return PettingZooEnv(PettingZooGraphEnv())
+    
+    env = env_creator({})
+    register_env("custom", env_creator)
+    
+    config = (
+        ppo.PPOConfig()
+        .environment("custom")
+        .multi_agent(
+            policies=env.get_agent_ids(),
+            policy_mapping_fn=(lambda agent_id, *args, **kwargs: agent_id),
+        )
+    )
+    
+    algo = config.build()
+    algo.train()
 """
+
+##########
+#La conversione dell'ambiente pettingzoo in ray compatible dà problemi
+#Per utilizzarci MARLlib conviene rifarlo tutto direttamente in Ray
+#I vantaggi aggiuntivo sono la possibilità di poter utilizzare l'intero framework ray
+#invece del solo modulo rllib
+
+env = PettingZooEnv(PettingZooGraphEnv())
+obs = env.reset()
+print(obs)
+print("ok")
+
+def create_env(args):
+    return PettingZooEnv(PettingZooGraphEnv())
+
+register_env("custom_env", create_env)
+
+print("ok2")
+
+#OLD
+config = ppo.PPOConfig().environment(env=create_env)
+
+trainer = (ppo.PPOConfig()
+           .env(env)
+           .build()
+)
+
+trainer.train()
+
+print("ok2.5")
+
+algo = config.build(env="custom_env")
+algo.train()
+
+"""
+#NEW BROKEN
+# Configure and build a RLlib algorithm using your custom environment
+config = {
+    "env": "custom_env",
+    # Other RLlib configuration options here
+}
+trainer = PPOTrainer(config=config)
+"""
+print("ok3")
+
+# Train your agent
 for i in range(10):
-    print(algo.train())
-
+    result = trainer.train()
+    print(result)

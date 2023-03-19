@@ -55,3 +55,5 @@ class Graph:
     def draw(self):
         #nx.draw_networkx(self.G, self.pos, node_size=100, node_color='k', edge_color='k', with_labels=False)
         plt.show()
+        #NB The x and y reference system of the plot is coherent with the one of the nxetwork graph
+        #so the coordinates shown in the bottom right corner are correct

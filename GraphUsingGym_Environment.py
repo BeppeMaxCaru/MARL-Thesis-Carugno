@@ -3,6 +3,8 @@ import graph
 import random
 import numpy as np
 
+import networkx as nx
+
 from gym.utils.env_checker import check_env
 from gym.wrappers import FlattenObservation
 
@@ -104,7 +106,7 @@ class GymGraphEnv(gym.Env):
         
         #Continue simulation for X steps and then reset the environment
         #Self.steps defines an episode length
-        if self.steps >= 10000:
+        if self.steps >= 1000:
             done = True
         else:
             done = False
@@ -124,8 +126,59 @@ class GymGraphEnv(gym.Env):
         """
         
         #Simple reward function for testing
+        #OLD
         #0 if agent is not on a target node, 1 if it is but it is not the same node as the previous step
-        reward = 0 if self.current_agent_node not in self.target_nodes else 1 if self.current_agent_node != self.previous_agent_node else 0
+        #reward = 0 if self.current_agent_node not in self.target_nodes else 1 if self.current_agent_node != self.previous_agent_node else 0
+        
+        #NEW
+        
+        if self.current_agent_node in self.target_nodes and self.current_agent_node != self.previous_agent_node:
+            # If the agent is at a target node, reward it with 1
+            reward = 1
+        elif self.current_agent_node != self.previous_agent_node:
+            # If the agent is not at a target node and is not looping, encourage exploration by giving it a small negative reward
+            reward = -0.1
+        elif self.current_agent_node == self.previous_agent_node:
+            reward = -1
+        else:
+            # If the agent is looping between two adjacent nodes, penalize it with a larger negative reward
+            reward = -0.2
+        
+            
+        #NEW WITH TIME PENALTY TEST
+        """
+        if self.current_agent_node in self.target_nodes and self.current_agent_node != self.previous_agent_node:
+            # If the agent is at a target node and moved from the previous node, reward it with 1
+            reward = 1
+            self.time_on_target_node = 0  # Reset time penalty
+        elif self.current_agent_node == self.previous_agent_node:
+            # If the agent is staying on the same node, penalize it with a time penalty that increases over time
+            self.time_on_target_node += 1
+            time_penalty = -0.01 * self.time_on_target_node
+            reward = max(-0.1, time_penalty)  # Limit maximum time penalty to -0.1
+        else:
+            # If the agent is not at a target node, encourage exploration by giving it a larger negative reward
+            reward = -0.1
+            self.time_on_target_node = 0  # Reset time penalty
+        """
+
+        """
+        #NEW WITH DISTANCE TO INCETIVIZE EXPLORATION
+        if self.current_agent_node in self.target_nodes and self.current_agent_node != self.previous_agent_node:
+            # If the agent is at a target node, reward it with 1
+            reward = 1
+        elif self.current_agent_node != self.previous_agent_node:
+            # If the agent is not at a target node and is not looping, encourage exploration by giving it a small negative reward
+            reward = -0.1
+            # Subtract distance from current node to all target nodes from the reward to encourage moving towards targets
+            dists = [nx.shortest_path_length(self.graph.G, self.current_agent_node, t) for t in self.target_nodes]
+            reward -= min(dists)/max(dists)
+        else:
+            # If the agent is looping between two adjacent nodes, penalize it with a larger negative reward
+            reward = -1
+        """
+        ######################
+        
         self.previous_agent_node = self.current_agent_node
         
         # Increase idleness of all target nodes by 1
