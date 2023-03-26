@@ -1,6 +1,5 @@
-    obs = env.reset()
-    print(obs)
-    print("ok")
-
-    def create_env(args):
-        return PettingZooEnv(PettingZooGraphEnv())
+    # Define the animation object
+        anim = animation.FuncAnimation(fig, update, frames=10, interval=1000, blit=False)
+                
+        # Show the plot
+        plt.show()

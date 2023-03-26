@@ -97,7 +97,7 @@ print("Std reward: " + str(std_reward))
 print(model.policy)
 
 print("Testing the model")
-#Test model
+#Test model and save policy
 model_env = model.get_env()
 obs = model_env.reset()
 episodes = 50
