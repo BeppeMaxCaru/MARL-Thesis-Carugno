@@ -1,6 +1,0 @@
-# rnn parameters
-
-model_arch_args:
-  mixer_embedding: 256
-  mixer_arch: "qmix" # qmix or vdn
-
