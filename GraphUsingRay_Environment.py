@@ -1,11 +1,11 @@
 import ray
-import gymnasium as gym
+import gym as gym
 import numpy as np
 import random
 
 from ray.rllib.env import MultiAgentEnv
 
-from ray.rllib.algorithms.ppo import PPOConfig
+#from ray.rllib.algorithms.ppo import PPOConfig
 
 from ray import tune
 from ray.tune.logger import pretty_print
@@ -220,7 +220,7 @@ for i in range(3):
 """
 
 #Testing with Ray
-
+"""
 def env_creator(env_config):
     return RayGraphEnv(env_config)
 
@@ -232,13 +232,13 @@ config = (
     PPOConfig().
     environment(
         env="RayEnv"
-        """
+        
         ,
         env_config={
             "test": gym.spaces.Box(-5.0, 5.0, (1, )),
             "observation_space": gym.spaces.Box(low=np.array([0, 0]), high=np.array([100, 100]), dtype=np.int32)
         }
-        """
+
     )
     .rollouts(num_rollout_workers=1)
 )
@@ -258,5 +258,5 @@ for i in range(5):
     print(results)
     
 ray.shutdown()
-
+"""
         
