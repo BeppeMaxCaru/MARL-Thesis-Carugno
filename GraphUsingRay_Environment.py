@@ -13,6 +13,15 @@ from ray.tune.registry import register_env
 
 import graph
 
+policy_mapping_dict = {
+    "only_patrollers": {
+        "description": "patrolling_graph",
+        "team_prefix": ("patroller_"),
+        "all_agents_one_policy": True,
+        "one_agent_one_policy": True,
+    }
+}
+
 class RayGraphEnv(MultiAgentEnv):
     
     def __init__(self, env_config=None, size=10, num_patrollers=1, num_attackers=0):

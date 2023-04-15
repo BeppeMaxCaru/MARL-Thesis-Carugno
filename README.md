@@ -1,6 +1,4 @@
 # MARL-Thesis-Carugno
 
-Ho importato tutta la libreria MARLlib per essere sicuro che tutto funzioni
-Per installarla ho eseguito le istruzioni e poi ho semplicemente non l'ho più resa una repo di git cancellando la cartella .git
-Così posso fare commit della cartella e pusharla nella repo su GitHub
-Finchè questa cartella era inizializzaa come git repo non me la faceva committare siccome già repo presumibilmente non poteva essere trackata
+Importante: il file di configurazione dell'env customizzato si trova in marllib/envs/base_env/config e si chiama patrolling.yaml
+Il suo utilizzo come file di configurazione é necessario ed è dove la funzione make_env di marllib va a prendere i parametri di default per costruire l'ambiente -> vedi doc!

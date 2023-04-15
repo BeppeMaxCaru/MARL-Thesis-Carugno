@@ -1,13 +1,13 @@
-from MARLlib import marllib
-from marllib import marl
-from marllib.envs.base_env import ENV_REGISTRY
+from MARLlib.marllib import *
+#from marllib import marl
+#from marllib.envs.base_env import ENV_REGISTRY
 
 from GraphUsingRay_Environment import RayGraphEnv
 
 # prepare the environment academy_pass_and_shoot_with_keeper
 #env = marl.make_env(environment_name="hanabi", map_name="Hanabi-Very-Small")
 #env = marl.make_env(environment_name="mpe", map_name="simple_spread", force_coop=True, continuous_actions=True)
-
+"""
 #RWARE
 env = marl.make_env(environment_name="rware", map_name="testing_map")
 
@@ -29,9 +29,14 @@ mappo.fit(env, model, stop={'episode_reward_mean': 2000, 'timesteps_total': 1000
 """          
 
 #CUSTOM_ENV
-ENV_REGISTRY["patrolling_graph"] = RayGraphEnv
+ENV_REGISTRY["patrolling"] = RayGraphEnv
 
-env = marl.make_env(environment_name="patrolling_graph", map_name="graph_map")
+env = MARLlib.marllib.marl.make_env(environment_name="patrolling", 
+                    map_name="patrolling_graph", 
+                    num_patrollers=1,
+                    num_attackers=0)
+
+"""
 
 # pick mappo algorithms
 mappo = marl.algos.mappo(hyperparam_source="test")
@@ -40,4 +45,5 @@ model = marl.build_model(env, mappo, {"core_arch": "mlp", "encode_layer": "128-1
 # start learning
 mappo.fit(env, model, stop={'episode_reward_mean': 2000, 'timesteps_total': 10000}, local_mode=True, num_gpus=1,
         num_workers=2, share_policy='all', checkpoint_freq=50)
+
 """
