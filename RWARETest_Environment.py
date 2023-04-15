@@ -36,16 +36,12 @@ env = marl.make_env(environment_name="patrolling",
                     num_patrollers=1,
                     num_attackers=0)
 
-
-
 # pick mappo algorithms
 mappo = marl.algos.mappo(hyperparam_source="test")
 
 # customize model
 model = marl.build_model(env, mappo, {"core_arch": "mlp", "encode_layer": "128-128"})
-"""
+
 # start learning
 mappo.fit(env, model, stop={'episode_reward_mean': 2000, 'timesteps_total': 10000}, local_mode=True, num_gpus=1,
         num_workers=2, share_policy='all', checkpoint_freq=50)
-
-"""

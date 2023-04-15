@@ -14,15 +14,16 @@ from ray.tune.registry import register_env
 import graph
 
 policy_mapping_dict = {
-    "only_patrollers": {
-        "description": "patrolling_graph",
-        "team_prefix": ("patroller_"),
+    "patrolling_graph": {
+        "description": "patrolling_test",
+        "team_prefix": ("Patroller_", "Attacker_"),
         "all_agents_one_policy": True,
         "one_agent_one_policy": True,
     }
 }
 
 REGISTRY = {}
+#REGISTRY["Patrolling"]
 
 class RayGraphEnv(MultiAgentEnv):
     
@@ -52,31 +53,39 @@ class RayGraphEnv(MultiAgentEnv):
             self.agents.append("Attacker_" + str(i) + "_ID")
         
         print(self.agents)
+        
+        self.num_agents = len(self.agents)
+        print(self.num_agents)
                 
         #Assign to each agent's observation space its location
         #for agent in self.agents:
         #    self.agents_to_obs_mapping[agent]["agent_starting_node_location"] = gym.spaces.Box(low=np.array([0, 0]), high=np.array([self._graph_size, self._graph_size]), dtype=np.int32)
         
-        self.observation_space = gym.spaces.Dict()
+        self.observation_space = gym.spaces.Dict({
+            "obs": gym.spaces.Box(low=np.array([0, 0]), high=np.array([self._graph_size, self._graph_size]), dtype=np.int32)
+        })
         
         #Assign to each agent the possibility to move: Stay, Up, Down, Left, Right
+        """
         self.action_space = {
             agent: gym.spaces.Discrete(5) for agent in self.agents
         }
+        """
+        
+        self.action_space = gym.spaces.Discrete(5)
         
     def reset(self):
         
         #Reset observation space for each agent
-        self.terminated = set()
-        self.truncated = set()
         
-        #Generate new graph
-        self._generate_new_graph()
+        #Generate new graph        
+        self._graph = self._generate_new_graph(self._graph_size)
         
         #Reset target nodes locations dictionary
         self._target_nodes_locations = {}
-        #Collect target nodes locations
-        self._get_target_nodes_locations()
+        #Collect target nodes locations from graph
+        self._target_nodes_locations = self._get_target_nodes_locations(self._graph)
+        print(self._target_nodes_locations)
         
         #Reset agents starting node positions dictionary
         self._agents_starting_nodes_locations = {}
@@ -163,19 +172,30 @@ class RayGraphEnv(MultiAgentEnv):
                 i = i + 1
         
         return obs_dict, reward_dict, done_dict, info_dict
-        
-    def _generate_new_graph(self):
-        
-        #Generate new graph
-        self._graph = graph.Graph(self._graph_size, self._graph_size)
     
-    def _get_target_nodes_locations(self):
+    def get_env_info(self):
+        env_info = {
+            "space_obs": self.observation_space,
+            "space_act": self.action_space,
+            "num_agents": self.num_agents,
+            "episode_limit": 1000,
+            "policy_mapping_info": policy_mapping_dict
+        }
+        return env_info
+        
+    
+    def _generate_new_graph(self, side_dim_of_squared_graph):
+        #Generate new graph
+        return graph.Graph(side_dim_of_squared_graph, side_dim_of_squared_graph)
+    
+    def _get_target_nodes_locations(self, xnetwork_graph):
+        dict_to_return_with_target_nodes_locations = {}
         #Collect target nodes locations
-        for node in self._graph.G.nodes:
-            if self._graph.G.nodes[node]['color'] == 'red':
-                #self._target_nodes_locations[node] = node
+        for node in xnetwork_graph.G.nodes:
+            if xnetwork_graph.G.nodes[node]['color'] == 'red':
                 #print(node)
-                self._target_nodes_locations[node] = node
+                dict_to_return_with_target_nodes_locations[node] = node
+        return dict_to_return_with_target_nodes_locations
     
     def _set_agents_random_starting_locations(self):
         for agent_ID in self.agents:
