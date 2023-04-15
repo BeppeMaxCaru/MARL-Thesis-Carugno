@@ -22,33 +22,37 @@ policy_mapping_dict = {
     }
 }
 
+REGISTRY = {}
+
 class RayGraphEnv(MultiAgentEnv):
     
-    def __init__(self, env_config=None, size=10, num_patrollers=1, num_attackers=0):
+    def __init__(self, env_config):
         
-        test_params_from_config = env_config.get("test", gym.spaces.Box(-1.0, 1.0, shape=(1, )))
-        test_obs = env_config.get("observation_space", gym.spaces.Box(low=np.array([0, 0]), high=np.array([10, 10]), dtype=np.int32))
-        
-        #Define size of the squared grid
-        self._graph_size = size
-                
+        #Configuration file settings + check
+        print("env config parameters:")
+        #Define size of the squared grid        
+        #size=10
+        self._graph_size = env_config["size"]
+        print(self._graph_size)
         # Define the possible agents in the environment
-        self.num_patrollers = num_patrollers
-        self.num_attackers = num_attackers
-        
+        #num_patrollers=1
+        self.num_patrollers = env_config["num_patrollers"]
+        print(self.num_patrollers)
+        #num_attackers=0
+        self.num_attackers = env_config["num_attackers"]
+        print(self.num_attackers)
+                        
         #Agents ids for Ray
-        self.agents = set()
+        self.agents = []
         #Add patrollers ids
-        for i in range(num_patrollers):
-            self.agents.add("Patroller_" + str(i) + "_ID")
+        for i in range(self.num_patrollers):
+            self.agents.append("Patroller_" + str(i) + "_ID")
         #Add attackers ids
-        for i in range(num_attackers):
-            self.agents.add("Attacker_" + str(i) + "_ID")
+        for i in range(self.num_attackers):
+            self.agents.append("Attacker_" + str(i) + "_ID")
         
-        self._agent_ids = set(range(len(self.agents)))
-        self._observations = {}
-        self._infos = {}
-        
+        print(self.agents)
+                
         #Assign to each agent's observation space its location
         #for agent in self.agents:
         #    self.agents_to_obs_mapping[agent]["agent_starting_node_location"] = gym.spaces.Box(low=np.array([0, 0]), high=np.array([self._graph_size, self._graph_size]), dtype=np.int32)
@@ -65,8 +69,6 @@ class RayGraphEnv(MultiAgentEnv):
         #Reset observation space for each agent
         self.terminated = set()
         self.truncated = set()
-        self._observations = {}
-        self._infos = {}
         
         #Generate new graph
         self._generate_new_graph()
