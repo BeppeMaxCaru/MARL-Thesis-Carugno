@@ -28,6 +28,13 @@ mappo.fit(env, model, stop={'episode_reward_mean': 2000, 'timesteps_total': 1000
           num_workers=1, share_policy='group', checkpoint_freq=50)
 """          
 
+##################################### CUSTOM ENV ############################################
+
+#A nice idea to simplify the environment would be to pass the graph to it externally
+#so it doesn't have to be generated inside it
+#This way a database of graphs can be built and an environment can be created from one of
+#graph of this dataset that can be passed to the environment
+
 #CUSTOM_ENV
 ENV_REGISTRY["patrolling"] = RayGraphEnv
 

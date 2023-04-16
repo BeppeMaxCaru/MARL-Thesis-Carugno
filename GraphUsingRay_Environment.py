@@ -43,12 +43,10 @@ class RayGraphEnv(MultiAgentEnv):
         #Add attackers ids
         for i in range(self.num_attackers):
             self.agents.append("Attacker_" + str(i) + "_ID")
+        print(self.agents)
         
         self.num_agents = len(self.agents)
-                
-        #Assign to each agent's observation space its location
-        #for agent in self.agents:
-        #    self.agents_to_obs_mapping[agent]["agent_starting_node_location"] = gym.spaces.Box(low=np.array([0, 0]), high=np.array([self._graph_size, self._graph_size]), dtype=np.int32)
+        print(len(self.agents))
         
         #Creating graph directly here instead of each time in reset!
         #This is the correct way to do so!
@@ -67,9 +65,7 @@ class RayGraphEnv(MultiAgentEnv):
         #Add to the observation space a gym space for each target node
         for i, target_node in enumerate(self._target_nodes_locations):
             self.observation_space["target_node_" + str(i) + "_location"] = gym.spaces.Box(low=np.array([0, 0]), high=np.array([self._graph_size, self._graph_size]), dtype=np.int32)
-        
-        
-        
+          
         #Same action space for all agents so I just need to declare it once (for now)
         #5 possible actions: Stay, Up, Down, Left, Right
         self.action_space = gym.spaces.Discrete(5)
@@ -79,6 +75,7 @@ class RayGraphEnv(MultiAgentEnv):
             agent: gym.spaces.Discrete(5) for agent in self.agents
         }
         """
+        print("finished init successfully")
                 
     def reset(self):
         
@@ -86,6 +83,7 @@ class RayGraphEnv(MultiAgentEnv):
         
         #Assign new random starting location to agents as a dictionary
         self._agents_starting_nodes_locations = self._set_agents_random_starting_locations(self._graph)
+        print(self._agents_starting_nodes_locations)
         
         #Reset observations for all agents once reset method is called
         #This is the equivalent of observation space
@@ -93,16 +91,18 @@ class RayGraphEnv(MultiAgentEnv):
         
         #Set observations spaces for all agents using mapping
         self._set_obs_spaces_for_all_agents()
-        
+        print(self._agents_to_obs_mapping)
+
         ########### NEW ############
         for i, agent in enumerate(self.agents):
+            #Assign to agent starting node
             obs[agent] = {
                 "obs": self._agents_starting_nodes_locations[agent]
             }
+            #Assign to agent target nodes locations
             for j, target in enumerate(self._target_nodes_locations):
-                obs[agent] = {
-                    "target_node_" + str(j) + "_location": self._target_nodes_locations[target]
-                }
+                obs[agent]["target_node_" + str(j) + "_location"] = self._target_nodes_locations[target]
+            print(obs)
         
         return obs
                 
@@ -233,4 +233,14 @@ class RayGraphEnv(MultiAgentEnv):
             obs[agent_ID] = {"obs": np.array([starting_node[0], starting_node[1]], dtype=np.int32)}
             #Add target nodes location            
 
-        
+
+#Testing
+
+fake_env_config = {
+    "size": 10,
+    "num_patrollers": 1,
+    "num_attackers": 0
+}
+
+grafo = RayGraphEnv(fake_env_config)
+grafo.reset()
