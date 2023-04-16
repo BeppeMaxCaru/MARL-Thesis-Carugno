@@ -5,12 +5,6 @@ import random
 
 from ray.rllib.env import MultiAgentEnv
 
-#from ray.rllib.algorithms.ppo import PPOConfig
-
-from ray import tune
-from ray.tune.logger import pretty_print
-from ray.tune.registry import register_env
-
 import graph
 
 policy_mapping_dict = {
@@ -19,31 +13,29 @@ policy_mapping_dict = {
         "team_prefix": ("Patroller_", "Attacker_"),
         "all_agents_one_policy": True,
         "one_agent_one_policy": True,
-    }
+    },
 }
 
 REGISTRY = {}
-#REGISTRY["Patrolling"]
+#REGISTRY["patrolling_graph"]
 
 class RayGraphEnv(MultiAgentEnv):
     
+    #env_config is a configuration dictionary containing the parameters to use to setup the env
     def __init__(self, env_config):
         
         #Configuration file settings + check
         print("env config parameters:")
         #Define size of the squared grid        
-        #size=10
         self._graph_size = env_config["size"]
         print(self._graph_size)
         # Define the possible agents in the environment
-        #num_patrollers=1
         self.num_patrollers = env_config["num_patrollers"]
         print(self.num_patrollers)
-        #num_attackers=0
         self.num_attackers = env_config["num_attackers"]
         print(self.num_attackers)
                         
-        #Agents ids for Ray
+        #Agents
         self.agents = []
         #Add patrollers ids
         for i in range(self.num_patrollers):
@@ -52,56 +44,68 @@ class RayGraphEnv(MultiAgentEnv):
         for i in range(self.num_attackers):
             self.agents.append("Attacker_" + str(i) + "_ID")
         
-        print(self.agents)
-        
         self.num_agents = len(self.agents)
-        print(self.num_agents)
                 
         #Assign to each agent's observation space its location
         #for agent in self.agents:
         #    self.agents_to_obs_mapping[agent]["agent_starting_node_location"] = gym.spaces.Box(low=np.array([0, 0]), high=np.array([self._graph_size, self._graph_size]), dtype=np.int32)
         
-        self.observation_space = gym.spaces.Dict({
-            "obs": gym.spaces.Box(low=np.array([0, 0]), high=np.array([self._graph_size, self._graph_size]), dtype=np.int32)
-        })
+        #Creating graph directly here instead of each time in reset!
+        #This is the correct way to do so!
+        #See RWARE example in MARLlin where Warehouse is initialized in __init__ and 
+        #not in reset!!!!!!
         
+        #Generate new graph        
+        self._graph = self._generate_new_graph(self._graph_size)
+        #Collect new target nodes locations from graph as a dictionary
+        self._target_nodes_locations = self._get_target_nodes_locations(self._graph)
+        
+        self.observation_space = gym.spaces.Dict({
+            #"obs" is the agent location -> do refactoring! 
+            "obs": gym.spaces.Box(low=np.array([0, 0]), high=np.array([self._graph_size, self._graph_size]), dtype=np.int32),
+        })
+        #Add to the observation space a gym space for each target node
+        for i, target_node in enumerate(self._target_nodes_locations):
+            self.observation_space["target_node_" + str(i) + "_location"] = gym.spaces.Box(low=np.array([0, 0]), high=np.array([self._graph_size, self._graph_size]), dtype=np.int32)
+        
+        
+        
+        #Same action space for all agents so I just need to declare it once (for now)
+        #5 possible actions: Stay, Up, Down, Left, Right
+        self.action_space = gym.spaces.Discrete(5)
         #Assign to each agent the possibility to move: Stay, Up, Down, Left, Right
         """
         self.action_space = {
             agent: gym.spaces.Discrete(5) for agent in self.agents
         }
         """
-        
-        self.action_space = gym.spaces.Discrete(5)
-        
+                
     def reset(self):
         
-        #Reset observation space for each agent
+        obs = {}
         
-        #Generate new graph        
-        self._graph = self._generate_new_graph(self._graph_size)
-        
-        #Reset target nodes locations dictionary
-        self._target_nodes_locations = {}
-        #Collect target nodes locations from graph
-        self._target_nodes_locations = self._get_target_nodes_locations(self._graph)
-        print(self._target_nodes_locations)
-        
-        #Reset agents starting node positions dictionary
-        self._agents_starting_nodes_locations = {}
-        #Assign random starting location to agents
-        self._set_agents_random_starting_locations()
+        #Assign new random starting location to agents as a dictionary
+        self._agents_starting_nodes_locations = self._set_agents_random_starting_locations(self._graph)
         
         #Reset observations for all agents once reset method is called
         #This is the equivalent of observation space
         self._agents_to_obs_mapping = {}
-        self.observation_space = {}
         
         #Set observations spaces for all agents using mapping
         self._set_obs_spaces_for_all_agents()
         
-        return self.observation_space
+        ########### NEW ############
+        for i, agent in enumerate(self.agents):
+            obs[agent] = {
+                "obs": self._agents_starting_nodes_locations[agent]
+            }
+            for j, target in enumerate(self._target_nodes_locations):
+                obs[agent] = {
+                    "target_node_" + str(j) + "_location": self._target_nodes_locations[target]
+                }
         
+        return obs
+                
     def step(self, action_dict):
         
         obs_dict = {}
@@ -182,8 +186,9 @@ class RayGraphEnv(MultiAgentEnv):
             "policy_mapping_info": policy_mapping_dict
         }
         return env_info
-        
     
+    ############## PRIVATE FUNCTIONS #############
+        
     def _generate_new_graph(self, side_dim_of_squared_graph):
         #Generate new graph
         return graph.Graph(side_dim_of_squared_graph, side_dim_of_squared_graph)
@@ -194,13 +199,14 @@ class RayGraphEnv(MultiAgentEnv):
         for node in xnetwork_graph.G.nodes:
             if xnetwork_graph.G.nodes[node]['color'] == 'red':
                 #print(node)
-                dict_to_return_with_target_nodes_locations[node] = node
+                dict_to_return_with_target_nodes_locations[node] = node 
         return dict_to_return_with_target_nodes_locations
     
-    def _set_agents_random_starting_locations(self):
+    def _set_agents_random_starting_locations(self, networkx_graph):
+        random_starting_nodes_locations = {}
         for agent_ID in self.agents:
-            random_node = random.choice(list(self._graph.G.nodes))
-            self._agents_starting_nodes_locations[agent_ID] = random_node
+            random_starting_nodes_locations[agent_ID] = random.choice(list(networkx_graph.G.nodes))
+        return random_starting_nodes_locations
             
     def _set_obs_spaces_for_all_agents(self):
         #Create the observation dictionary for each agent
@@ -218,76 +224,13 @@ class RayGraphEnv(MultiAgentEnv):
                 i = i + 1
         
         self.observation_space = dict(self._agents_to_obs_mapping)
-    
-#Testing without Ray
-#to just check that the environment is compiling and is correct
-"""
-env = RayGraphEnv()
-
-print(env.num_patrollers)
-print(env.agents)
-obs = env.reset()
-print(env._agents_starting_nodes_locations)
-print("mapping")
-print(env._agents_to_obs_mapping)
-
-for i in range(3):
-    obs = env.reset()
-    print("New iteration\n")
-    print(obs['Patroller_0_ID'])
-    print(obs['Patroller_0_ID']['Patroller_0_ID: current position'])
-    print(obs['Patroller_0_ID']['Patroller_0_ID: target_node_0_location'])
-    print(obs['Patroller_0_ID']['Patroller_0_ID: target_node_1_location'])
-    print(obs['Patroller_0_ID']['Patroller_0_ID: target_node_2_location'])
-    print(obs['Patroller_0_ID']['Patroller_0_ID: target_node_3_location'])
-    print(obs['Patroller_0_ID']['Patroller_0_ID: target_node_4_location'])
-    print("\nstart step\n")
-    obs_dict, rew, done, info = env.step(action_dict={'Patroller_0_ID': 1})
-    print(obs_dict)
-    print(rew)
-    print(done)
-    print(info)
-    print("stop step\n")
-"""
-
-#Testing with Ray
-"""
-def env_creator(env_config):
-    return RayGraphEnv(env_config)
-
-ray.init()
-
-register_env("RayEnv", env_creator)
-
-config = (
-    PPOConfig().
-    environment(
-        env="RayEnv"
         
-        ,
-        env_config={
-            "test": gym.spaces.Box(-5.0, 5.0, (1, )),
-            "observation_space": gym.spaces.Box(low=np.array([0, 0]), high=np.array([100, 100]), dtype=np.int32)
-        }
+    def _set_new_correct_obs(self):
+        obs = {}
+        for i, agent_ID in enumerate(self.agents):
+            current_agent_obs_space = {}
+            #Add starting location
+            obs[agent_ID] = {"obs": np.array([starting_node[0], starting_node[1]], dtype=np.int32)}
+            #Add target nodes location            
 
-    )
-    .rollouts(num_rollout_workers=1)
-)
-
-config = (
-    PPOConfig().
-    environment(
-        env="RayEnv",
-    )
-    .rollouts(num_rollout_workers=1)
-)
-
-algo = config.build()
-
-for i in range(5):
-    results = algo.train()
-    print(results)
-    
-ray.shutdown()
-"""
         
