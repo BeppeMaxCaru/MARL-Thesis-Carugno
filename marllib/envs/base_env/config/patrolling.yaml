@@ -3,9 +3,14 @@ env: patrolling
 env_args:
   map_name: "patrolling_graph"
   size: 10
+  num_agents: 2
   num_patrollers: 1
-  num_attackers: 0
+  num_attackers: 1
+  force_coop: False
 
+#Defines a masking to make some actions invalid for some agents
 mask_flag: False
+#Defines if there's a global state that can be accessed by agents
 global_state_flag: False
+#Defines if agents have access to the state of other agents
 opp_action_in_cc: False
