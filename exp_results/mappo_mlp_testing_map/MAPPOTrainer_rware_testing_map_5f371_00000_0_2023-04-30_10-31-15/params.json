@@ -1,0 +1,111 @@
+{
+  "batch_mode": "complete_episodes",
+  "clip_param": 0.3,
+  "entropy_coeff": 0.01,
+  "env": "rware_testing_map",
+  "evaluation_interval": 10,
+  "framework": "torch",
+  "kl_coeff": 0.2,
+  "lambda": 1.0,
+  "lr": 0.0005,
+  "model": {
+    "custom_model": "Centralized_Critic_Model",
+    "custom_model_config": {
+      "agent_name_ls": [
+        "agent_0",
+        "agent_1"
+      ],
+      "algo_args": {
+        "batch_episode": 2,
+        "batch_mode": "complete_episodes",
+        "clip_param": 0.3,
+        "entropy_coeff": 0.01,
+        "kl_coeff": 0.2,
+        "lambda": 1.0,
+        "lr": 0.0005,
+        "num_sgd_iter": 2,
+        "use_gae": true,
+        "vf_clip_param": 10.0,
+        "vf_loss_coeff": 1.0
+      },
+      "algorithm": "mappo",
+      "checkpoint_end": true,
+      "checkpoint_freq": 0,
+      "env": "rware",
+      "env_args": {
+        "column_height": 1,
+        "difficulty": "medium",
+        "fast_obs": true,
+        "map_name": "testing_map",
+        "map_size": "tiny",
+        "max_inactivity_steps": null,
+        "max_steps": 500,
+        "msg_bits": 0,
+        "n_agents": 2,
+        "request_queue_size": 2,
+        "reward_type": "RewardType.INDIVIDUAL",
+        "sensor_range": 1,
+        "shelf_columns": 3,
+        "shelf_rows": 1
+      },
+      "episode_limit": 500,
+      "evaluation_interval": 10,
+      "force_coop": false,
+      "framework": "torch",
+      "global_state_flag": false,
+      "local_dir": "",
+      "local_mode": true,
+      "mask_flag": false,
+      "model_arch_args": {
+        "core_arch": "mlp",
+        "encode_layer": "128-256",
+        "fc_layer": 2,
+        "hidden_state_size": 256,
+        "out_dim_fc_0": 128,
+        "out_dim_fc_1": 64
+      },
+      "num_agents": 2,
+      "num_cpus_per_worker": 1,
+      "num_gpus": 1,
+      "num_gpus_per_worker": 0,
+      "num_workers": 1,
+      "opp_action_in_cc": true,
+      "policy_mapping_info": {
+        "all_scenario": {
+          "all_agents_one_policy": true,
+          "description": "rware all scenarios",
+          "one_agent_one_policy": true,
+          "team_prefix": [
+            "agent_"
+          ]
+        }
+      },
+      "restore_path": {
+        "model_path": "",
+        "params_path": ""
+      },
+      "seed": 321,
+      "share_policy": "group",
+      "space_act": "Discrete(5)",
+      "space_obs": "Dict(obs:Box([-100. -100. -100. -100. -100. -100. -100. -100. -100. -100. -100. -100.\n -100. -100. -100. -100. -100. -100. -100. -100. -100. -100. -100. -100.\n -100. -100. -100. -100. -100. -100. -100. -100. -100. -100. -100. -100.\n -100. -100. -100. -100. -100. -100. -100. -100. -100. -100. -100. -100.\n -100. -100. -100. -100. -100. -100. -100. -100. -100. -100. -100. -100.\n -100. -100. -100. -100. -100. -100. -100. -100. -100. -100. -100. -100.\n -100. -100. -100. -100. -100. -100. -100. -100. -100. -100. -100. -100.\n -100. -100. -100. -100. -100. -100. -100. -100. -100. -100. -100. -100.\n -100. -100. -100. -100. -100. -100. -100. -100. -100. -100. -100. -100.\n -100. -100. -100. -100.], [100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100.\n 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100.\n 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100.\n 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100.\n 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100.\n 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100.\n 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100.\n 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100. 100.], (112,), float32))",
+      "stop_iters": 9999999,
+      "stop_reward": 999999,
+      "stop_timesteps": 2000000
+    }
+  },
+  "multiagent": {
+    "policies": "{'shared_policy'}",
+    "policy_mapping_fn": "<function run_cc.<locals>.<lambda> at 0x000002014362CF70>"
+  },
+  "num_gpus": 1,
+  "num_gpus_per_worker": 0,
+  "num_sgd_iter": 2,
+  "num_workers": 1,
+  "seed": 321,
+  "sgd_minibatch_size": 1000,
+  "simple_optimizer": false,
+  "train_batch_size": 1000,
+  "use_gae": true,
+  "vf_clip_param": 10.0,
+  "vf_loss_coeff": 1.0
+}

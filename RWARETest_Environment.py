@@ -29,5 +29,5 @@ mappo.fit(env, model, stop={'episode_reward_mean': 2000, 'timesteps_total': 1000
           num_workers=1, share_policy='group', checkpoint_freq=50)
 """
 
-mappo.fit(env, model, stop={'timesteps_total': 1000}, local_mode=True, num_gpus=1,
-          num_workers=1, share_policy='group', checkpoint_freq=50)
+mappo.fit(env, model, stop={'timesteps_total': 1}, local_mode=True, num_gpus=1,
+          num_workers=1, share_policy='group', checkpoint_freq=0)

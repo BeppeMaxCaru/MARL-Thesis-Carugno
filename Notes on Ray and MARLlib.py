@@ -55,3 +55,45 @@ def notes(self):
         """
         
         ##################################################################
+        
+def offline_graph_generation(self):
+    #Passing an offline generated graph to the __init func instead of online generation
+    
+    #Configuration file settings + check
+        #Define size of the squared grid        
+        self._graph_size = env_config["size"]
+        # Define the possible agents in the environment
+        ...
+        
+        #Creating graph directly here instead of each time in reset!
+        #This is the correct way to do so!
+        #See RWARE example in MARLlin where Warehouse is initialized in __init__ and 
+        #not in reset!!!!!!
+        
+        #Same action space for all agents so I just need to declare it once (for now)
+        #5 possible actions: Stay, Up, Down, Left, Right
+        self.action_space = gym.spaces.Discrete(5)
+        #Assign to each agent the possibility to move: Stay, Up, Down, Left, Right
+        #Removing action of Stay??? Would it make sense?
+    
+def points_to_discuss_about_reset_func(self):
+    #Reset observations for each agent once reset is called
+        obs = {}
+
+        ########### NEW ############
+        #Reset obs spaces for each agent once reset method is called
+        #Different strategies and possibilities on how to handle the reset!
+        #Options:
+        #1) Reset also all target nodes locations
+        """
+        If so I need to change the graph class
+        """
+        #2) Each reset also randomizes the agents starting locations for each episodes
+        
+        #Assign new random starting location to agents as a dictionary
+        self._agents_locations = self._set_agents_random_starting_locations(self._graph)
+        #print(self._agents_locations)
+        
+        #3) Use the same agents starting locations every reset -> risk of overfitting?
+        """
+        """

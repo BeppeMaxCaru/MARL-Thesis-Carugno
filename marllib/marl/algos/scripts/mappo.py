@@ -56,7 +56,7 @@ def run_mappo(model: Any, exp: Dict, run: Dict, env: Dict,
         "Centralized_Critic_Model", model)
 
     _param = AlgVar(exp)
-
+    
     """
     for bug mentioned https://github.com/ray-project/ray/pull/20743
     make sure sgd_minibatch_size > max_seq_len

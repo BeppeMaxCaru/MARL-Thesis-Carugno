@@ -37,7 +37,7 @@ def run_cc(exp_info, env, model, stop=None):
     ########################
 
     env_info = env.get_env_info()
-    map_name = exp_info['env_args']['map_name']
+    map_name = exp_info['env_args']['map_name']  
     agent_name_ls = env.agents
     env_info["agent_name_ls"] = agent_name_ls
     env.close()
@@ -136,7 +136,7 @@ def run_cc(exp_info, env, model, stop=None):
     }
 
     stop_config = dict_update(stop_config, stop)
-
+    
     if exp_info['restore_path']['model_path'] == '':
         restore_config = None
     else:
@@ -158,11 +158,11 @@ def run_cc(exp_info, env, model, stop=None):
         }
 
         stop_config = recursive_dict_update(stop_config, render_stop_config)
-
+    
     ##################
     ### run script ###
     ##################
-
+        
     results = POlICY_REGISTRY[exp_info["algorithm"]](model, exp_info, run_config, env_info, stop_config,
                                                      restore_config)
 

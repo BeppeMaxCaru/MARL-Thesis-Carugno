@@ -7,19 +7,43 @@ from ray.rllib.env.multi_agent_env import MultiAgentEnv
 
 import graph
 
+#Policy_mapping_dict deve essere configurato correttamente con alcune opzioni
+#Se si usa come "all_scenario" non serve configurazione con map_name
+#siccome verrà sempre usata all_scenario altrimenti va fornito uno scenario con map_name
+
+#Ex.
+"""
 policy_mapping_dict = {
-    "patrolling_graph": {
+    "all_scenario": {
         "description": "patrolling_test",
         "team_prefix": ("Patroller_", "Attacker_"),
         "all_agents_one_policy": False, #Defines if agent have a shared policy or each one has its own
         "one_agent_one_policy": True, #Defines if each agent should have its own policy or not
     },
 }
+"""
 
-REGISTRY = {}
-#REGISTRY["patrolling_graph"]
+# vs
 
+# Dove patrolling_graph è il "map_name"
 
+policy_mapping_dict = {
+    "patrolling_graph": {
+        "description": "only patrollers",
+        #"team_prefix": ("Patroller_", "Attacker_"),
+        "team_prefix": ("Patroller_",),
+        
+        #Wheter defining here "all_agents_one_policy" and/or "one_agent_one_policy" depends
+        #on the share_policy parameter used in [algo].fit(...)
+        # 1) If share_policy == "all" "all_agents_one_policy" is used and has to be set to True
+        # 2) If share_policy == "group" "all_agents_one_policy" is used, it has to be set to True
+        # and "team_prefix" is used to share the policy but only between members of the same groups
+        # 3) If share_policy == "individual" "one_agent_one_policy" is used and has to be set True
+        
+        "all_agents_one_policy": True, #Defines if agent have a shared policy or each one has its own
+        "one_agent_one_policy": True, #Defines if each agent should have its own policy or not
+    }
+}
 
 class RayGraphEnv(MultiAgentEnv):
     
@@ -36,18 +60,11 @@ class RayGraphEnv(MultiAgentEnv):
         print(env_config)        
         
         #Add patrollers
-        self.agents = ["Patroller_" + str(i) for i in range(self.num_patrollers)]
+        self.agents = ["Patroller_{}".format(i) for i in range(self.num_patrollers)]
         #Add attackers
-        self.agents = self.agents + ["Attacker_" + str(i) for i in range(self.num_attackers)]
-        print(self.agents)
+        #self.agents = self.agents + ["Attacker_{}".format(i) for i in range(self.num_attackers)]
         
         self.num_agents = len(self.agents)
-        print(len(self.agents))
-        
-        #Creating graph directly here instead of each time in reset!
-        #This is the correct way to do so!
-        #See RWARE example in MARLlin where Warehouse is initialized in __init__ and 
-        #not in reset!!!!!!
         
         #Generate new graph        
         self._graph = self._generate_new_graph(self._graph_size)
@@ -59,44 +76,38 @@ class RayGraphEnv(MultiAgentEnv):
         self.observation_space = gym.spaces.Dict({
             #shape = (agents positions and targets  positions) * 2 since both are tuples of 2 elems
             "obs": gym.spaces.Box(low=0, high=self._graph_size, shape=(2 + len(self._target_nodes_locations)*2,), dtype=np.int32),
+            #"state": gym.spaces.Box(low=0, high=self._graph_size, shape=(len(self._target_nodes_locations)*2,), dtype=np.int32),
             #"opponent_obs": None,
         })
         
-        #Same action space for all agents so I just need to declare it once (for now)
-        #5 possible actions: Stay, Up, Down, Left, Right
+        self.iter_counter = 0
+        
+        #Same 5 actions for all patrollers and attackers: Stay, Up, Down, Left, Right
         self.action_space = gym.spaces.Discrete(5)
-        #Assign to each agent the possibility to move: Stay, Up, Down, Left, Right      
-        print("finished init successfully")
-                
+        
+        print(self.observation_space)
+        print(self.action_space)
+        print(self.num_agents)
+        print(self.agents)
+
+        self.env_config = env_config
+                        
     def reset(self):
+        
+        self.iter_counter = 0
         
         #Reset observations for each agent once reset is called
         obs = {}
-
-        ########### NEW ############
-        #Reset obs spaces for each agent once reset method is called
-        #Different strategies and possibilities on how to handle the reset!
-        #Options:
-        #1) Reset also all target nodes locations
-        """
-        If so I need to change the graph class
-        """
-        #2) Each reset also randomizes the agents starting locations for each episodes
         
         #Assign new random starting location to agents as a dictionary
         self._agents_locations = self._set_agents_random_starting_locations(self._graph)
         #print(self._agents_locations)
         
-        #3) Use the same agents starting locations every reset -> risk of overfitting?
-        """
-        """
-            
         for i, agent in enumerate(self.agents):
             current_pos_and_target_locations_tuples = [self._agents_locations[agent]]
             for j, target in enumerate(self._target_nodes_locations):
                 current_pos_and_target_locations_tuples.append(self._target_nodes_locations[target])
-            obs[agent] = {"obs": np.array(current_pos_and_target_locations_tuples).flatten()}
-        
+            obs[agent] = {"obs": np.array(current_pos_and_target_locations_tuples, dtype=np.int32).flatten()}
         print(obs)
         
         return obs
@@ -105,28 +116,27 @@ class RayGraphEnv(MultiAgentEnv):
         
         obs = {}
         rewards = {}
-        done = {"__all__": False}
+        dones = {"__all__": False}
         info = {}
         
+        self.iter_counter = self.iter_counter + 1
+        print("timestep number: " + str(self.iter_counter))
+                
         #Key, value in dict.items()
         for agent_id, action in action_dict.items():
             
             # Get the current agent's node location            
             agent_starting_node = self._agents_locations[agent_id]
-            
             new_agent_location = self._move_agent(agent_starting_node, action, self._graph)
                         
             # Check if the current agent is on a target node
-            self._agents_locations[agent_id] = new_agent_location            
-            
-            if new_agent_location in self._target_nodes_locations:
-                # Give reward of 1 if agent is on a target node
-                rewards[agent_id] = 1
-                done[agent_id] = False
-            else:
-                rewards[agent_id] = 0
-                done[agent_id] = False
+            self._agents_locations[agent_id] = new_agent_location
                 
+            # Give reward of 1 if agent is on a target node else 0
+            rewards[agent_id] = 1 if new_agent_location in self._target_nodes_locations else 0
+            dones[agent_id] = False if self.iter_counter < 5 else True
+            #dones[agent_id] = True if new_agent_location in self._target_nodes_locations else False
+            
             # Update observation dictionary for this agent -> update only his position since targets are static
             #print(new_agent_location)            
             current_pos_and_target_locations_tuples = [self._agents_locations[agent_id]]
@@ -134,17 +144,24 @@ class RayGraphEnv(MultiAgentEnv):
                 current_pos_and_target_locations_tuples.append(self._target_nodes_locations[target])
             obs[agent_id] = {"obs": np.array(current_pos_and_target_locations_tuples).flatten()}
         
-        return obs, rewards, done, info
+        #print(action_dict)
+        #print(obs)
+        
+        return obs, rewards, dones, {} #info
     
     def get_env_info(self):
         env_info = {
             "space_obs": self.observation_space,
             "space_act": self.action_space,
             "num_agents": self.num_agents,
-            "episode_limit": 1000,
+            "episode_limit": self.env_config["max_steps"],
             "policy_mapping_info": policy_mapping_dict
         }
+        print(env_info)
         return env_info
+    
+    def close(self):
+        return
     
     ############## PRIVATE FUNCTIONS #############
         
@@ -172,87 +189,24 @@ class RayGraphEnv(MultiAgentEnv):
         }
                 
         move = movements[action]
+        #If Stay return starting node
+        if move == 0: 
+            return agent_starting_node
+        #Otherwise calculate new location
         new_agent_location = (agent_starting_node[0] + move[0], agent_starting_node[1] + move[1])
-                
+        #Check if new location exists in graph and if yes return it
         if graph.G.has_edge(agent_starting_node, new_agent_location):
-            agent_starting_node = new_agent_location
-                
+            return new_agent_location
+        #If not return starting node        
         return agent_starting_node
-    
-    """
-    def _old_step_function(self):
-
-        obs = {}
-        rewards = {}
-        done = {"__all__": False}
-        info = {}
-        
-        #Key, value in dict.items()
-        for agent_id, action in action_dict.items():
-            
-            # Get the current agent's node location            
-            agent_starting_node = self._agents_locations[agent_id]
-            new_agent_location = agent_starting_node
-            
-            #Try moving the agent and if succesfull save in new agent location the new position
-            if action == 0:
-                #Stay in the same node
-                pass
-            elif action == 1:
-                #Move to the node above in the graph if edge going to it exists
-                #Check if the node above exists and if there is an edge going to it
-                if (agent_starting_node[0] > 0) and (self._graph.G.has_edge(agent_starting_node, (agent_starting_node[0]-1, agent_starting_node[1]))):
-                    #Move to the node above
-                    new_agent_location = (agent_starting_node[0]-1, agent_starting_node[1])
-            elif action == 2:
-                #Move to the node down in the graph if edge exists
-                #Check if the node below exists and if there is an edge going to it
-                if (agent_starting_node[0] < self._graph.n-1) and (self._graph.G.has_edge(agent_starting_node, (agent_starting_node[0]+1, agent_starting_node[1]))):
-                    #Move to the node below
-                    new_agent_location = (agent_starting_node[0]+1, agent_starting_node[1])
-            elif action == 3:
-                #Move to the node on the left in the graph if edge exists
-                #Check if the node to the left exists and if there is an edge going to it
-                if (agent_starting_node[1] > 0) and (self._graph.G.has_edge(agent_starting_node, (agent_starting_node[0], agent_starting_node[1]-1))):
-                    #Move to the node to the left
-                    new_agent_location = (agent_starting_node[0], agent_starting_node[1]-1)
-            elif action == 4:
-                #Move to the node on the right in the graph if edge exists
-                #Check if the node to the right exists and if there is an edge going to it
-                if (agent_starting_node[1] < self._graph.m-1) and (self._graph.G.has_edge(agent_starting_node, (agent_starting_node[0], agent_starting_node[1]+1))):
-                    #Move to the node to the right
-                    new_agent_location = (agent_starting_node[0], agent_starting_node[1]+1)
-            else:
-                #Invalid action
-                raise ValueError("Invalid action: {}".format(action))
-                        
-            # Check if the current agent is on a target node
-            self._agents_locations[agent_id] = new_agent_location            
-            
-            if new_agent_location in self._target_nodes_locations:
-                # Give reward of 1 if agent is on a target node
-                rewards[agent_id] = 1
-                done[agent_id] = False
-            else:
-                rewards[agent_id] = 0
-                done[agent_id] = False
-                
-            # Update observation dictionary for this agent -> update only his position since targets are static
-            #print(new_agent_location)            
-            current_pos_and_target_locations_tuples = [self._agents_locations[agent_id]]
-            for j, target in enumerate(self._target_nodes_locations):
-                current_pos_and_target_locations_tuples.append(self._target_nodes_locations[target])
-            obs[agent_id] = {"obs": np.array(current_pos_and_target_locations_tuples).flatten()}
-        
-        return obs, rewards, done, info
-    """
 
 #Testing
-
-fake_env_config = {
+#NB When testing always comment the below code
+"""
+fake_env_config_1 = {
     "size": 10,
-    "num_agents": 1,
-    "num_patrollers": 1,
+    "num_agents": 2,
+    "num_patrollers": 2,
     "num_attackers": 0
 }
 
@@ -263,8 +217,16 @@ fake_env_config_2 = {
     "num_attackers": 1
 }
 
-grafo = RayGraphEnv(fake_env_config_2)
+grafo = RayGraphEnv(fake_env_config_1)
 grafo.reset()
-obs, rew, done, info = grafo.step({"Patroller_0": 2, "Attacker_0": 1})
+obs, rew, dones, info = grafo.step({"Patroller_0": 2, "Patroller_1": 1})
 #print(obs)
 #print(rew)
+
+for i in range(10):
+    obs, rew, dones, info = grafo.step({"Patroller_0": random.randint(0, 4), "Patroller_1": random.randint(0, 4)})
+    print(obs)
+    print(rew)
+
+print(grafo.get_env_info())
+"""

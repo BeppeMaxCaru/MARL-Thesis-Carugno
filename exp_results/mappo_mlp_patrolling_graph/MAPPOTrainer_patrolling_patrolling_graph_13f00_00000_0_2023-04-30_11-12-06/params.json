@@ -1,0 +1,110 @@
+{
+  "batch_mode": "complete_episodes",
+  "clip_param": 0.3,
+  "entropy_coeff": 0.01,
+  "env": "patrolling_patrolling_graph",
+  "evaluation_interval": 10,
+  "framework": "torch",
+  "kl_coeff": 0.2,
+  "lambda": 1.0,
+  "lr": 0.0005,
+  "model": {
+    "custom_model": "Centralized_Critic_Model",
+    "custom_model_config": {
+      "agent_name_ls": [
+        "Patroller_0"
+      ],
+      "algo_args": {
+        "batch_episode": 2,
+        "batch_mode": "complete_episodes",
+        "clip_param": 0.3,
+        "entropy_coeff": 0.01,
+        "kl_coeff": 0.2,
+        "lambda": 1.0,
+        "lr": 0.0005,
+        "num_sgd_iter": 2,
+        "use_gae": true,
+        "vf_clip_param": 10.0,
+        "vf_loss_coeff": 1.0
+      },
+      "algorithm": "mappo",
+      "checkpoint_end": true,
+      "checkpoint_freq": 0,
+      "env": "patrolling",
+      "env_args": {
+        "force_coop": false,
+        "map_name": "patrolling_graph",
+        "max_steps": 1,
+        "num_agents": 2,
+        "num_attackers": 1,
+        "num_patrollers": 1,
+        "size": 10
+      },
+      "episode_limit": 1,
+      "evaluation_interval": 10,
+      "force_coop": false,
+      "framework": "torch",
+      "global_state_flag": false,
+      "local_dir": "",
+      "local_mode": true,
+      "mask_flag": false,
+      "model_arch_args": {
+        "core_arch": "mlp",
+        "encode_layer": "128-128",
+        "fc_layer": 2,
+        "hidden_state_size": 256,
+        "out_dim_fc_0": 128,
+        "out_dim_fc_1": 64
+      },
+      "num_agents": 1,
+      "num_cpus_per_worker": 1,
+      "num_gpus": 1,
+      "num_gpus_per_worker": 0,
+      "num_workers": 1,
+      "opp_action_in_cc": false,
+      "policy_mapping_info": {
+        "patrolling_graph": {
+          "all_agents_one_policy": true,
+          "description": "only patrollers",
+          "one_agent_one_policy": true,
+          "team_prefix": [
+            "Patroller_"
+          ]
+        }
+      },
+      "restore_path": {
+        "model_path": "",
+        "params_path": ""
+      },
+      "seed": 321,
+      "share_policy": "individual",
+      "space_act": "Discrete(5)",
+      "space_obs": "Dict(obs:Box([0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0], [10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10\n 10 10 10 10 10 10 10 10 10 10], (34,), int32))",
+      "stop_iters": 9999999,
+      "stop_reward": 999999,
+      "stop_timesteps": 2000000
+    }
+  },
+  "multiagent": {
+    "policies": {
+      "policy_0": [
+        null,
+        "Dict(obs:Box([0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0], [10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10\n 10 10 10 10 10 10 10 10 10 10], (34,), int32))",
+        "Discrete(5)",
+        {}
+      ]
+    },
+    "policy_mapping_fn": "<function run_cc.<locals>.<lambda> at 0x000002BE6D9F5E50>"
+  },
+  "num_gpus": 1,
+  "num_gpus_per_worker": 0,
+  "num_sgd_iter": 2,
+  "num_workers": 1,
+  "seed": 321,
+  "sgd_minibatch_size": 2,
+  "simple_optimizer": false,
+  "train_batch_size": 2,
+  "use_gae": true,
+  "vf_clip_param": 10.0,
+  "vf_loss_coeff": 1.0
+}

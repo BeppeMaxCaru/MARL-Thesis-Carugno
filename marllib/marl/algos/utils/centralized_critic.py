@@ -156,7 +156,7 @@ def centralized_critic_postprocessing(policy,
         last_r = 0.0
     else:
         last_r = sample_batch[SampleBatch.VF_PREDS][-1]
-
+    
     if "lambda" in policy.config:
         train_batch = compute_advantages(
             sample_batch,

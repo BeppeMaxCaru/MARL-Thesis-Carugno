@@ -74,21 +74,30 @@ class RllibRWARE(MultiAgentEnv):
         env_config["difficulty"] = difficulty
 
         self.env_config = env_config
+        
+        print(self.observation_space)
+        print(self.action_space)
+        print(self.num_agents)
+        print(self.agents)
+        print(env_config)
 
     def reset(self):
         original_obs = self.env.reset()
+        print(original_obs)
         obs = {}
         for x in range(self.num_agents):
             obs["agent_%d" % x] = {
                 "obs": original_obs[x]
             }
-
+        print(obs)
         return obs
 
     def step(self, action_dict):
         actions = []
         for key, value in sorted(action_dict.items()):
             actions.append(value)
+        print(action_dict)
+        print(actions)
         o, r, d, i = self.env.step(actions)
         rewards = {}
         obs = {}
@@ -116,3 +125,5 @@ class RllibRWARE(MultiAgentEnv):
 
     def close(self):
         self.env.close()
+        
+
