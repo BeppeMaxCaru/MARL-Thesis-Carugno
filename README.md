@@ -3,7 +3,7 @@
 Importante: il file di configurazione dell'env customizzato si trova in marllib/envs/base_env/config e si chiama patrolling.yaml
 Il suo utilizzo come file di configurazione é necessario ed è dove la funzione make_env di marllib va a prendere i parametri di default per costruire l'ambiente -> vedi doc!
 
-def notes(self):
+#def notes(self):
 ########################## IMPORTANT ##############################
         #This comment explains how to correctly create the observation space for a MARLlib agent!
         #READ IT CAREFULLY AND MAKE SURE YOU UNDERSTOOD IT BEFORE CREATING THE OBSERVATION_SPACE
@@ -61,7 +61,7 @@ def notes(self):
         
         ##################################################################
         
-def offline_graph_generation(self):
+#def offline_graph_generation(self):
     #Passing an offline generated graph to the __init func instead of online generation
     
     #Configuration file settings + check
@@ -81,7 +81,7 @@ def offline_graph_generation(self):
         #Assign to each agent the possibility to move: Stay, Up, Down, Left, Right
         #Removing action of Stay??? Would it make sense?
     
-def points_to_discuss_about_reset_func(self):
+#def points_to_discuss_about_reset_func(self):
     #Reset observations for each agent once reset is called
         obs = {}
 
