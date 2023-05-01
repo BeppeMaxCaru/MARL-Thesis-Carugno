@@ -4,7 +4,7 @@ Importante: il file di configurazione dell'env customizzato si trova in marllib/
 Il suo utilizzo come file di configurazione é necessario ed è dove la funzione make_env di marllib va a prendere i parametri di default per costruire l'ambiente -> vedi doc!
 
 
-Qua sotto ci sono altre note importanti da ricordare e riordinare!
+Qua sotto ci sono altre note importanti da ricordare e riordinare su Ray e MARLlib!
 ```
 #def notes(self):
 ########################## IMPORTANT ##############################
