@@ -3,6 +3,7 @@
 Importante: il file di configurazione dell'env customizzato si trova in marllib/envs/base_env/config e si chiama patrolling.yaml
 Il suo utilizzo come file di configurazione é necessario ed è dove la funzione make_env di marllib va a prendere i parametri di default per costruire l'ambiente -> vedi doc!
 
+'''
 #def notes(self):
 ########################## IMPORTANT ##############################
         #This comment explains how to correctly create the observation space for a MARLlib agent!
@@ -102,3 +103,4 @@ Il suo utilizzo come file di configurazione é necessario ed è dove la funzione
         #3) Use the same agents starting locations every reset -> risk of overfitting?
         """
         """
+'''
