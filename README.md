@@ -106,3 +106,11 @@ Qua sotto ci sono altre note importanti da ricordare e riordinare su Ray e MARLl
         """
         """
 ```
+
+How training works:
+
+Relevant parameters to set:
+batch_mode: ["complete_episodes" | "truncated_episodes"]
+
+completed episodes means that batches always contains full episodes
+truncated episodes means that the samples in a batch can be reached by also truncating episodes
