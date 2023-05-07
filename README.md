@@ -107,18 +107,19 @@ Qua sotto ci sono altre note importanti da ricordare e riordinare su Ray e MARLl
         """
 ```
 
-How training works:
+# How training works:
 
 Relevant parameters to set:
-batch_mode: ["complete_episodes" | "truncated_episodes"]
+
+- batch_mode: ["complete_episodes" | "truncated_episodes"]
 completed episodes means that batches always contains full episodes -> train_batch_size is the equivalent of an epoch
 truncated episodes means that the samples in a batch can be reached by also truncating episodes
 
-train_batch_size: number of steps/samples to collect from a number of episodes to fill the buffer that is going to be sampled to generate sgd_minibatches
+- train_batch_size: number of steps/samples to collect from a number of episodes to fill the buffer that is going to be sampled to generate sgd_minibatches
 
-sgd_minibatch_size: how many samples are collected from train train_batch_size to perform a nn update
+- sgd_minibatch_size: how many samples are collected from train train_batch_size to perform a nn update
 
-num_sgd_iter: how many times the randomly sampled minibatches are generated and fed to the nn for weights updated before moving to next epoch
+- num_sgd_iter: how many times the randomly sampled minibatches are generated and fed to the nn for weights updated before moving to next epoch
 
 train_batch_size is the size of the samples in a batch used to perform a weight updates of the networks, it's always bigger than the lenght of an episode in case of batch_mode is complete_episodes
 
@@ -130,6 +131,19 @@ num_sgd_iter: defines how mony updates are done using sgd_minibatches_size in on
 
 ## Two options
 
-### Configuration IPPO without parameters sharing and how to replicate it here
+**Configuration IPPO without parameters sharing and how to replicate it here**
 
-### Configuration IPPO with parameters sharing and how to replicate it here
+In Rware paper:
+
+- 
+
+
+In Ray:
+
+- In main_patrolling.py in ippo.fit share_policy='individual' to disable parameters sharing
+
+**Configuration IPPO with parameters sharing and how to replicate it here**
+
+In Ray:
+
+- In main_patrolling.py in ippo.fit share_policy='group' to enable parameters sharing between agents of the same teams identified by teams prefix
