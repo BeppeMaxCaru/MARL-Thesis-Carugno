@@ -111,21 +111,26 @@ Qua sotto ci sono altre note importanti da ricordare e riordinare su Ray e MARLl
 
 Relevant parameters to set:
 
-- batch_mode: ["complete_episodes" | "truncated_episodes"]
+- **batch_mode: ["complete_episodes" | "truncated_episodes"]**: 
 completed episodes means that batches always contains full episodes -> train_batch_size is the equivalent of an epoch
 truncated episodes means that the samples in a batch can be reached by also truncating episodes
 
-- train_batch_size: number of steps/samples to collect from a number of episodes to fill the buffer that is going to be sampled to generate sgd_minibatches
+- **train_batch_size**: It's the equivalent of an epoch. A number of timesteps (transition/samples) equivalent to train_batch_size is done and collected from a subsequent number of episodes. This train_batch_size is then used as a buffer to extract samples used to create minibatches of size sgd_minibatch_size. 
 
-- sgd_minibatch_size: how many samples are collected from train train_batch_size to perform a nn update
+NB If the batch_mode selected is complete_episodes, train_batch_size has to be always bigger than the episode lenght
 
-- num_sgd_iter: how many times the randomly sampled minibatches are generated and fed to the nn for weights updated before moving to next epoch
+- **sgd_minibatch_size**: It's the size of the randomly sampled minibatches built to perform a nn weights update.
 
-train_batch_size is the size of the samples in a batch used to perform a weight updates of the networks, it's always bigger than the lenght of an episode in case of batch_mode is complete_episodes
+- **num_sgd_iter**: Defines how many network weights updates are done during an epoch using minibatches of size sgd_minibatch_size before moving to the next epoch.
 
-sgd_minibatch_size is the number of samples to collect from train_batch_size to perform a weight updates on the network
+Example:
+- in stop config episode limit: 100
+- Batch_mode: "complete_episodes"
+- Episode_limit: 10 (this means each episode can have a maximum lenght of 10)
+- train_batch_size: 20
+- sgd_minibatches_size: 5
+- num_sgd_iter: 10
 
-num_sgd_iter: defines how mony updates are done using sgd_minibatches_size in one epoch
 
 # Configuration parameters to use during rware simulation to train IPPO according to the rware paper:
 
@@ -147,3 +152,4 @@ In Ray:
 In Ray:
 
 - In main_patrolling.py in ippo.fit share_policy='group' to enable parameters sharing between agents of the same teams identified by teams prefix
+
