@@ -130,7 +130,19 @@ Example:
 - train_batch_size: 20
 - sgd_minibatches_size: 5
 - num_sgd_iter: 10
+-> First epoch is made out of episode 0 and episode 1 since they last 10 steps (transitions) and they fill a train_batch_size since 10 * 2 = 20
+-> In this first epoch 10 network updates are done to the agents nn (num_sgd_iter = 10) using minibatches of size 5 with samples (transition) being sampled from the train batch which contains 20 timesteps
+-> In this case one epoch contains 20 network updates for each nn of each agent
+-> The total number of epochs is (100 * 10) / 20 = 50
+-> The total number of network weights updates done for each agent is 50 * 10 = 500
 
+# Training parameters as rware paper using IPPO as baseline
+
+**In rware paper**
+- 40 million timesteps
+- 41 metrics collections during training
+- 40 mil / 40 = 1 checkpoint every 1 mil timesteps to monitor training
+- scenario used for rware: tiny 4p -> map_size: "tiny", num_agents: 4, difficulty: "medium" (difficulty is the lenght of queue of tasks assigned to each agent, with medium is 1 so each agent has always only one task assigned -> double check this in the paper)
 
 # Configuration parameters to use during rware simulation to train IPPO according to the rware paper:
 
