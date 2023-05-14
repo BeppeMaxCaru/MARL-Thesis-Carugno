@@ -3,7 +3,7 @@ from marllib import marl
 from marllib.envs.base_env import ENV_REGISTRY
 from marllib.envs.global_reward_env import COOP_ENV_REGISTRY
 
-from GraphUsingRay_Environment import RayGraphEnv
+from ray_rl_patrolling_environment import RayGraphEnv
 
 ##################################### CUSTOM ENV ############################################
 
@@ -47,7 +47,7 @@ print("ok make env")
 #Three options: $ENV, "test" or "common"
 #Their respective parameters are in the marllib.marl.algos.hyperparameters folders
 #Better not to touch them in the original yaml files and pass them here as additional parameters
-mappo = marl.algos.mappo(
+ippo = marl.algos.ippo(
         ########### Default mandatory parameter
         hyperparam_source="test"
         ########### Additional parameters to override the default ones in test.yaml
@@ -92,15 +92,26 @@ print("ok mappo init")
 # fc_layer: 3
 # encode_layer: "xxx-xxx-xxx" 
 
-#fc_layer has to contain the number of layers
-#If encode_layer is used then number of neurons equal to fc_layer can be added by putting
+#fc_layer has to contain the number of layers of the encoder
+
+#If "encode_layer" is used the encoder is built using the corresponding value which
+# has to be string with numbers with "-" between consecutive numbers where such numbers 
+# are the number of neuron that are in each layer of the encoder
+# NB if the encode-layer field is present only that will be used to build the encoder, 
+# so the original fc_encoder.yaml file parameters will be ignored
+# Instead if no encode-layer field is present a layer will be built for each output_dim_fc_{} value present
+# using the index to order them based on the fc_encoder.yaml file
+
+# Ex. {"encode_layer": "128-128"}
+
+# then number of neurons equal to fc_layer can be added by putting
 #a "-" between each number like in last example, otherwise the syntax to use is the one of the
 #two first examples with out_dim_fc_.{i} for each fc_layer indicated 
-  
+
 #Also build_model returns a tuple, with a model and its configuration
 #model, model_config = marl.build_model(...)
 
-model = marl.build_model(env, mappo, {"core_arch": "mlp", "encode_layer": "128-128"})
+model = marl.build_model(env, ippo, {"core_arch": "mlp", "encode_layer": "128-128"})
 
 print("ok model build")
 
@@ -116,7 +127,7 @@ print("ok model build")
 #Extremely important: the lenght of the training is the product of "episode limit" in
 # get_env_info and "timesteps_total" in the stop conditions
 
-mappo.fit(
+ippo.fit(
         ########## Mandatory parameters
         env, # Tuple resulting from make_env
         model, # Tuple resulting from build_model
@@ -124,8 +135,8 @@ mappo.fit(
         local_mode=True,
         num_gpus=1,
         num_workers=1,
-        share_policy='group', #Può essere "all", "group" oppure "individual"
-        checkpoint_freq=0,
+        share_policy='individual', #Può essere "all", "group" oppure "individual"
+        checkpoint_freq=0
         #checkpoint_end=False,
 )
 

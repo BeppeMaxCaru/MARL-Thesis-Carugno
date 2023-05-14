@@ -24,6 +24,8 @@ from rware import Warehouse, RewardType
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from gym.spaces import Dict as GymDict, Discrete, Box
 
+import time
+
 _sizes = {
     "tiny": (1, 3),
     "small": (2, 3),
@@ -75,29 +77,26 @@ class RllibRWARE(MultiAgentEnv):
 
         self.env_config = env_config
         
-        print(self.observation_space)
-        print(self.action_space)
-        print(self.num_agents)
-        print(self.agents)
-        print(env_config)
+        #print(self.observation_space)
+        #print(self.action_space)
+        #print(self.num_agents)
+        #print(self.agents)
+        print("env_config: " + str(env_config))
 
     def reset(self):
         original_obs = self.env.reset()
-        print(original_obs)
         obs = {}
         for x in range(self.num_agents):
             obs["agent_%d" % x] = {
                 "obs": original_obs[x]
             }
-        print(obs)
         return obs
 
     def step(self, action_dict):
+        #print(action_dict)
         actions = []
         for key, value in sorted(action_dict.items()):
             actions.append(value)
-        print(action_dict)
-        print(actions)
         o, r, d, i = self.env.step(actions)
         rewards = {}
         obs = {}
@@ -113,6 +112,12 @@ class RllibRWARE(MultiAgentEnv):
         dones = {"__all__": done_flag}
         return obs, rewards, dones, infos
 
+    def render(self, mode=None):
+        self.env.render()
+        time.sleep(0.5)
+        return True
+    
+    
     def get_env_info(self):
         env_info = {
             "space_obs": self.observation_space,
@@ -121,6 +126,7 @@ class RllibRWARE(MultiAgentEnv):
             "episode_limit": self.env_config["max_steps"],
             "policy_mapping_info": policy_mapping_dict
         }
+        print(env_info)
         return env_info
 
     def close(self):

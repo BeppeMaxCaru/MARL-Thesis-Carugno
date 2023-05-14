@@ -25,15 +25,15 @@
 # Detailed explanation for each hyper parameter can be found in ray/rllib/agents/ppo/ippo.py
 
 algo_args:
-  use_gae: True
-  lambda: 1.0
-  kl_coeff: 0.2
-  batch_episode: 2
-  num_sgd_iter: 5
-  vf_loss_coeff: 1.0
-  lr: 0.0005
-  entropy_coeff: 0.01
-  clip_param: 0.3
-  vf_clip_param: 10.0
+  use_gae: True # GAE = Generalized Advantage Estimation -> technique to improve learning aiming at reducing variance
+  lambda: 1.0 # Is the GAE lambda parameter -> used to control tradeoff between bias and variance 
+  kl_coeff: 0.2 # Initial coefficient for KL divergence.
+  batch_episode: 10 # -> in RWARE paper 10 * 500 = 5000 timesteps in each train batch #NB Original was 2 # Num of episodes to collect to create a train batch
+  num_sgd_iter: 4 # -> in RWARE paper 4 update epochs on each train batch of 5000 timesteps #NB Original was 5 # How many minibatches to build and use to perform networks updates in an epoch: Number of SGD iterations in each outer loop (i.e., number of epochs to execute per train batch).
+  vf_loss_coeff: 1.0 # Coefficient of the value function loss. IMPORTANT: you must tune this if you set vf_share_layers=True inside your model's config
+  lr: 0.0005 # In rware paper 0.0005 for both with and without params sharing# Learning rate
+  entropy_coeff: 0.001 # In rware paper 0.001 for both with and without params sharing #Original was 0.01
+  clip_param: 0.2 # In rware paper 0.2 for both with and without params sharing # The PPO clip parameter
+  vf_clip_param: 10.0 # Clip param for the value function. Note that this is sensitive to the scale of the rewards. If your expected V is large, increase this.
   batch_mode: "complete_episodes"
 

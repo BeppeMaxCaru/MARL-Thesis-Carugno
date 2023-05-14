@@ -64,6 +64,10 @@ def run_ippo(model: Any, exp: Dict, run: Dict, env: Dict,
     episode_limit = env["episode_limit"]
     while sgd_minibatch_size < episode_limit:
         sgd_minibatch_size *= 2
+        
+    print("train_batch_size: " + str(train_batch_size))
+    print("sgd_minibatch_size: " + str(sgd_minibatch_size))
+    print("train_batch_size: " + str(train_batch_size))
 
     batch_mode = _param["batch_mode"]
     lr = _param["lr"]

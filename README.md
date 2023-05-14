@@ -139,21 +139,51 @@ Example:
 # Training parameters as rware paper using IPPO as baseline
 
 **In rware paper**
-- 40 million timesteps
+- Each episode has a maximum limit of 500 timesteps
+- 40 million timesteps of training in total
 - 41 metrics collections during training
 - 40 mil / 40 = 1 checkpoint every 1 mil timesteps to monitor training
 - scenario used for rware: tiny 4p -> map_size: "tiny", num_agents: 4, difficulty: "medium" (difficulty is the lenght of queue of tasks assigned to each agent, with medium is 1 so each agent has always only one task assigned -> double check this in the paper)
+
+- NB tiny map is an 11*11 squared grid however that's not randomly initialized but always has
+the same layout! Only the agents positions are initialized randomly!
+
+- neural networks are used with the same size of 128 neurons in the hidden layer
+- clipping value of surrogate PPO objective function is 0.2 -> ppo clipping value
+- number of update epochs per training batch is 4
+- size of experience replay is either 5K episodes or 1M samples (depending on which uses lower memory)
+
+- Gamma is already set by default both in Ray and in EPYMarl to 0.99
+
+
+- The architecture of the actor/policy and network and critic network are exactly the same
+- They're built using the "encode-layer" value of the dictionary passed
+- Their input size is the observation space dimension
+- Their output layers are however different: for the actor/policy network a final layer is added with an output size equivalent to the number of action, instead for the critic network a differnt final layer is added with only 1 neuron and output size 1 to return the expected return value from a given state (which means that the input of the critic is the observation space too, exactly the same input as the actor/policy network)
+
+- In EpyMARL config files for ippo non sharing e ippo sharing:
+- Epochs is the number of updates performed on each training batch -> is the equivalent of num_sgd_iter and its value is 4!
+- Buffer_size is the amount of episodes to collect to form a training batch -> is the equivalent of batch_episode and its value is 10 -> (batch_episode * episode_limit) is the amount of timesteps collected in the training buffer size called train_batch_size 
+- Batch_size is the number of episodes to train on -> is the equivalent of sgd_minibatch_size and is value is 10
+- Batch_size_run is 10 and is the number of environments run in parallel. Environments are run in parallel only to collect samples more efficiently, so the number of network updates has to be kept the same instead of being multiplied for the times of parallel environments run. 
+- NB To replicate such conditions for RWARE from the EpyMARL paper we have to set num_sgd_iter = 4 and batch_episode = 10. Since episodes lasts 500 timesteps we build buffers containing 10 * 500 = 5000 timesteps. Since in the original configs files ("https://github.com/uoe-agents/epymarl/blob/main/src/config/algs/ippo_ns.yaml" & "https://github.com/uoe-agents/epymarl/blob/main/src/config/algs/ippo.yaml") of the paper of RWARE the number of episodes used to perform one epoch of training is the same as the number in the buffer it means that the full buffer is used to perform the training for a total of 4 neural networks weights updates since the num_sgd_iter is 4. After this 4 updates the training buffer is populated with the next ten episodes and this procedure is started again until the 40M timesteps are reached. This means that the total number of weights updates performed on each network is 40M / 5000 = 8000 buffers * 4 = 32000. 
+
 
 # Configuration parameters to use during rware simulation to train IPPO according to the rware paper:
 
 ## Two options
 
+In IPPO and MAPPO the number of update epochs per training batch is 4 and the clipping value of the surrogate objective is 0.2.
+
 **Configuration IPPO without parameters sharing and how to replicate it here**
 
 In Rware paper:
 
-- 
-
+- Neural network architecture is FC (fully connected) -> MLP in our case
+- 3 layers with the hidden one of size 128 -> 128
+- For those two "core_arch":{"mlp": "128"}
+- Learning rate lr = 0.0005
+- Entropy coefficient = 0.001
 
 In Ray:
 

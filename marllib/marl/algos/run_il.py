@@ -100,6 +100,8 @@ def run_il(exp_info, env, model, stop=None):
     ### experiment config ###
     #########################
 
+    print("seed modified: " + str(exp_info["seed"]))
+    
     run_config = {
         "seed": int(exp_info["seed"]),
         "env": exp_info["env"] + "_" + exp_info["env_args"]["map_name"],

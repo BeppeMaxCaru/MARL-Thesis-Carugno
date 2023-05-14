@@ -5,7 +5,10 @@ import random
 
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 
-import graph
+import patrolling_graph
+
+#for blocking the script for debuggin
+import sys
 
 #Policy_mapping_dict deve essere configurato correttamente con alcune opzioni
 #Se si usa come "all_scenario" non serve configurazione con map_name
@@ -40,7 +43,7 @@ policy_mapping_dict = {
         # and "team_prefix" is used to share the policy but only between members of the same groups
         # 3) If share_policy == "individual" "one_agent_one_policy" is used and has to be set True
         
-        "all_agents_one_policy": True, #Defines if agent have a shared policy or each one has its own
+        "all_agents_one_policy": False, #Defines if agent have a shared policy or each one has its own
         "one_agent_one_policy": True, #Defines if each agent should have its own policy or not
     }
 }
@@ -56,6 +59,12 @@ class RayGraphEnv(MultiAgentEnv):
         # Define the possible agents in the environment
         self.num_patrollers = env_config["num_patrollers"]
         self.num_attackers = env_config["num_attackers"]
+        
+        #Seed to initialize and control random number generators and ensure
+        #reproducibility of experiments
+        self.seed = env_config["seed"]
+        random.seed(self.seed)
+        np.random.seed(self.seed)
         
         print(env_config)        
         
@@ -80,15 +89,18 @@ class RayGraphEnv(MultiAgentEnv):
             #"opponent_obs": None,
         })
         
+        #Cerca di usare "state" per passare in modo più semplice posizione dei nodi target
+        
         self.iter_counter = 0
         
         #Same 5 actions for all patrollers and attackers: Stay, Up, Down, Left, Right
         self.action_space = gym.spaces.Discrete(5)
         
-        print(self.observation_space)
-        print(self.action_space)
+        #print(self.observation_space)
+        #print(self.action_space)
         print(self.num_agents)
         print(self.agents)
+        print("env config: " + str(env_config))
 
         self.env_config = env_config
                         
@@ -108,7 +120,7 @@ class RayGraphEnv(MultiAgentEnv):
             for j, target in enumerate(self._target_nodes_locations):
                 current_pos_and_target_locations_tuples.append(self._target_nodes_locations[target])
             obs[agent] = {"obs": np.array(current_pos_and_target_locations_tuples, dtype=np.int32).flatten()}
-        print(obs)
+        #print(obs)
         
         return obs
                 
@@ -121,9 +133,19 @@ class RayGraphEnv(MultiAgentEnv):
         
         self.iter_counter = self.iter_counter + 1
         print("timestep number: " + str(self.iter_counter))
-                
+        
+        """
+        if (self.iter_counter > 5):
+        #if (len(action_dict) == 0):
+            print(self.env_config)
+            sys.exit()
+        """
+        #print(action_dict)
+        
         #Key, value in dict.items()
         for agent_id, action in action_dict.items():
+            
+            #print((agent_id, action))
             
             # Get the current agent's node location            
             agent_starting_node = self._agents_locations[agent_id]
@@ -134,7 +156,7 @@ class RayGraphEnv(MultiAgentEnv):
                 
             # Give reward of 1 if agent is on a target node else 0
             rewards[agent_id] = 1 if new_agent_location in self._target_nodes_locations else 0
-            dones[agent_id] = False if self.iter_counter < 5 else True
+            #dones[agent_id] = False
             #dones[agent_id] = True if new_agent_location in self._target_nodes_locations else False
             
             # Update observation dictionary for this agent -> update only his position since targets are static
@@ -144,20 +166,25 @@ class RayGraphEnv(MultiAgentEnv):
                 current_pos_and_target_locations_tuples.append(self._target_nodes_locations[target])
             obs[agent_id] = {"obs": np.array(current_pos_and_target_locations_tuples).flatten()}
         
-        #print(action_dict)
         #print(obs)
+        #print(rewards)
+        #print(dones)
+        #print(info)
         
-        return obs, rewards, dones, {} #info
+        ########### Va definito dones altrimenti simulazione non si fermerà mai!!!!!! ################
+        
+        
+        return obs, rewards, dones, info
     
     def get_env_info(self):
         env_info = {
             "space_obs": self.observation_space,
             "space_act": self.action_space,
             "num_agents": self.num_agents,
-            "episode_limit": self.env_config["max_steps"],
+            "episode_limit": 5,
             "policy_mapping_info": policy_mapping_dict
         }
-        print(env_info)
+        print("env info: " + str(env_info))
         return env_info
     
     def close(self):
@@ -167,7 +194,7 @@ class RayGraphEnv(MultiAgentEnv):
         
     def _generate_new_graph(self, side_dim_of_squared_graph):
         #Generate new graph
-        return graph.Graph(side_dim_of_squared_graph, side_dim_of_squared_graph)
+        return patrolling_graph.Graph(side_dim_of_squared_graph, side_dim_of_squared_graph)
     
     def _get_target_nodes_locations(self, xnetwork_graph):
         #Collect target nodes locations

@@ -7,6 +7,7 @@ env_args:
   num_patrollers: 2
   num_attackers: 0
   max_steps: 1
+  seed: 0
   force_coop: False
 
 #Defines a masking to make some actions invalid for some agents
