@@ -51,12 +51,9 @@ class Graph:
             else:
                 # Assign the color black to the node
                 self.G.nodes[node]['color'] = 'black'
-        nx.draw_networkx(self.G, self.pos, node_size=100, node_color=[self.G.nodes[node]['color'] for node in remaining_nodes], edge_color='k', with_labels=False)
         return self.G
     
-    def draw(self):
-        #nx.draw_networkx(self.G, self.pos, node_size=100, node_color='k', edge_color='k', with_labels=False)
-        plt.show()
+    def draw(self): 
         #NB The x and y reference system of the plot is coherent with the one of the nxetwork graph
         #so the coordinates shown in the bottom right corner are correct
         ...
@@ -64,47 +61,5 @@ class Graph:
     #Update graph with agent position -> useful for future visual debugging 
     def update_grah_with_agent_pos(self, x_agent_coordinate, y_agent_coordinate):
         ...
-        
-        
-#################################################################
-#Class animation testing!
-    def generate_frames(self, num_iterations):
-        frames = []
-        for i in range(num_iterations):
-            self.remove_random_nodes_and_edges(0.2)
-            self.colour_targets_nodes(0.2)
-            frame = nx.draw_networkx(self.G, self.pos, node_size=100, node_color=[self.G.nodes[node]['color'] for node in self.G.nodes()], edge_color='k', with_labels=False)
-            frames.append(frame)
-        return frames
-
-##################################################################
-#Remove comments to activate visual debugger       
-"""
-prev_node = None
-pause = False
-
-def update(frame):
-    global prev_node
-    
-    # Remove the green color from the previously green node
-    if prev_node is not None:
-        graph.G.nodes[prev_node]['color'] = 'black'
-        
-    # Get a random node and make it green
-    node = random.choice(list(graph.G.nodes()))
-    graph.G.nodes[node]['color'] = 'green'
-    prev_node = node
-    
-    # Draw networkx graph
-    nx.draw_networkx(graph.G, graph.pos, node_size=100, node_color=[graph.G.nodes[node]['color'] for node in graph.G.nodes()], edge_color='k', with_labels=False)
-
-#Testing visual debugger
-# Create the initial graph
-graph = Graph(10, 10)
-# Create the animation
-anim = animation.FuncAnimation(plt.gcf(), update, frames=10, interval=1000)
-# Show the animation
-plt.show()
-"""
 
         

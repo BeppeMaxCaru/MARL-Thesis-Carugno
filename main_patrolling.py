@@ -3,7 +3,10 @@ from marllib import marl
 from marllib.envs.base_env import ENV_REGISTRY
 from marllib.envs.global_reward_env import COOP_ENV_REGISTRY
 
-from ray_rl_patrolling_environment import RayGraphEnv
+import random
+import numpy as np
+
+from ray_rl_patrolling_environment import RayGraphEnv, RayGraphEnv_Coop
 
 ##################################### CUSTOM ENV ############################################
 
@@ -15,7 +18,11 @@ from ray_rl_patrolling_environment import RayGraphEnv
 #CUSTOM_ENV
 ENV_REGISTRY["patrolling"] = RayGraphEnv
 #CUSTOM COOP ENV
-COOP_ENV_REGISTRY["patrolling"] = RayGraphEnv
+COOP_ENV_REGISTRY["patrolling"] = RayGraphEnv_Coop
+
+#Set seeds
+np.random.seed(0)
+random.seed(0)
 
 #marl.make_env is in marllib.marl in the __init__.py file
 #It returns the environment and its configuration (config used to setup and initialize Ray) 
@@ -25,6 +32,7 @@ env = marl.make_env(
         environment_name="patrolling", 
         map_name="patrolling_graph",
         force_coop=False, #Change this value to True to register the environment as a coop one
+        #By making force_coop True the total reward is split equally between agents
         ############# Additional optional params to change yaml file default values -> **env_params
         #NB Only parameters already specified in yaml file can be passed and changed otherwise error!
 
@@ -37,7 +45,6 @@ env = marl.make_env(
 print(env[0])
 print(env[1])
 #Fino qua tutto ok -> il codice della libreria è molto semplice
-print("ok make env")
 
 # pick algorithm
 #Initialization done using the class _AlgoManager in marllib.marl in file __init__.py
@@ -53,8 +60,6 @@ ippo = marl.algos.ippo(
         ########### Additional parameters to override the default ones in test.yaml
         # ...
 )
-
-print("ok mappo init")
 
 # customize model
 #
@@ -111,9 +116,7 @@ print("ok mappo init")
 #Also build_model returns a tuple, with a model and its configuration
 #model, model_config = marl.build_model(...)
 
-model = marl.build_model(env, ippo, {"core_arch": "mlp", "encode_layer": "128-128"})
-
-print("ok model build")
+model = marl.build_model(env, ippo, {"core_arch": "mlp", "encode_layer": "256-128"})
 
 # start learning
 #mappo.fit(env, model, stop={'episode_reward_mean': 2000, 'timesteps_total': 10000}, local_mode=True, num_gpus=1,
@@ -131,12 +134,13 @@ ippo.fit(
         ########## Mandatory parameters
         env, # Tuple resulting from make_env
         model, # Tuple resulting from build_model
-        stop={'timesteps_total': 1}, # Dictionary to define stop conditions
+        stop={'timesteps_total': 20}, # Dictionary to define stop conditions
         local_mode=True,
-        num_gpus=1,
+        num_gpus=0,
         num_workers=1,
         share_policy='individual', #Può essere "all", "group" oppure "individual"
-        checkpoint_freq=0
+        checkpoint_freq=5,
+        seed=0
         #checkpoint_end=False,
 )
 

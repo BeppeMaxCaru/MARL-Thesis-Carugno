@@ -76,12 +76,6 @@ class RllibRWARE(MultiAgentEnv):
         env_config["difficulty"] = difficulty
 
         self.env_config = env_config
-        
-        #print(self.observation_space)
-        #print(self.action_space)
-        #print(self.num_agents)
-        #print(self.agents)
-        print("env_config: " + str(env_config))
 
     def reset(self):
         original_obs = self.env.reset()
@@ -93,7 +87,6 @@ class RllibRWARE(MultiAgentEnv):
         return obs
 
     def step(self, action_dict):
-        #print(action_dict)
         actions = []
         for key, value in sorted(action_dict.items()):
             actions.append(value)
@@ -126,7 +119,6 @@ class RllibRWARE(MultiAgentEnv):
             "episode_limit": self.env_config["max_steps"],
             "policy_mapping_info": policy_mapping_dict
         }
-        print(env_info)
         return env_info
 
     def close(self):

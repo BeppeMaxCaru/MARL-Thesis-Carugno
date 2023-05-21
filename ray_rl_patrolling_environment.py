@@ -5,10 +5,10 @@ import random
 
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 
-import patrolling_graph
+import networkx as nx
+import matplotlib.pyplot as plt
 
-#for blocking the script for debuggin
-import sys
+import patrolling_graph
 
 #Policy_mapping_dict deve essere configurato correttamente con alcune opzioni
 #Se si usa come "all_scenario" non serve configurazione con map_name
@@ -66,7 +66,7 @@ class RayGraphEnv(MultiAgentEnv):
         #random.seed(self.seed)
         #np.random.seed(self.seed)
         
-        self.max_steps = env_config["episode_limit"]
+        self.max_steps_per_episode = env_config["episode_limit"]
         
         print(env_config)        
         
@@ -90,43 +90,35 @@ class RayGraphEnv(MultiAgentEnv):
             #"state": gym.spaces.Box(low=0, high=self._graph_size, shape=(len(self._target_nodes_locations)*2,), dtype=np.int32),
             #"opponent_obs": None,
         })
-        
-        #Cerca di usare "state" per passare in modo più semplice posizione dei nodi target
+        #Cerca di usare "state" per passare in modo più semplice posizione dei nodi target?
         
         #Used to interrupt episodes when limit timesteps are reached
-        self.timesteps_counter = 0
+        self.current_episode_timesteps_counter = 0
+        
+        self.current_episode_number = 0
+        self.total_timesteps_counter = 0
         
         #Same 5 actions for all patrollers and attackers: Stay, Up, Down, Left, Right
         self.action_space = gym.spaces.Discrete(5)
         
-        #print(self.observation_space)
-        #print(self.action_space)
-        print(self.num_agents)
-        print(self.agents)
-        print("env config: " + str(env_config))
-
         self.env_config = env_config
-                        
+                                
     def reset(self):
-        
-        print("Reset being called")
-        
-        self.timesteps_counter = 0
+
+        self.current_episode_timesteps_counter = 0
         
         #Reset observations for each agent once reset is called
         obs = {}
         
         #Assign new random starting location to agents as a dictionary
         self._agents_locations = self._set_agents_random_starting_locations(self._graph)
-        #print(self._agents_locations)
         
         for i, agent in enumerate(self.agents):
             current_pos_and_target_locations_tuples = [self._agents_locations[agent]]
             for j, target in enumerate(self._target_nodes_locations):
                 current_pos_and_target_locations_tuples.append(self._target_nodes_locations[target])
             obs[agent] = {"obs": np.array(current_pos_and_target_locations_tuples, dtype=np.int32).flatten()}
-        #print(obs)
-        
+                
         return obs
                 
     def step(self, action_dict):
@@ -137,13 +129,9 @@ class RayGraphEnv(MultiAgentEnv):
         
         done_flag = False
         
-        #print(action_dict)
-        
         #Key, value in dict.items()
         for agent_id, action in action_dict.items():
-            
-            #print((agent_id, action))
-            
+                        
             # Get the current agent's node location            
             agent_starting_node = self._agents_locations[agent_id]
             new_agent_location = self._move_agent(agent_starting_node, action, self._graph)
@@ -161,16 +149,22 @@ class RayGraphEnv(MultiAgentEnv):
                 current_pos_and_target_locations_tuples.append(self._target_nodes_locations[target])
             obs[agent_id] = {"obs": np.array(current_pos_and_target_locations_tuples).flatten()}
         
-        print(obs)
-        #print(rewards)
-        
         ########### Va definito dones altrimenti simulazione non si fermerà mai!!!!!! ################
         
-        self.timesteps_counter = self.timesteps_counter + 1
-        print("timestep number: " + str(self.timesteps_counter))
-        if (self.timesteps_counter >= self.max_steps):
+        #If episode limit not reached increase timesteps counters
+        if (self.current_episode_timesteps_counter < self.max_steps_per_episode):
+            self.current_episode_timesteps_counter = self.current_episode_timesteps_counter + 1
+            self.total_timesteps_counter = self.total_timesteps_counter + 1
+        #If episode limit reached increase episode counter and set done_flag to True to call reset()
+        if (self.current_episode_timesteps_counter >= self.max_steps_per_episode):
             done_flag = True
+            #Counters
+            self.current_episode_number = self.current_episode_number + 1
         dones = {"__all__": done_flag}
+        #NB if dones __all__ diventa true current_episode_viene_resettato a 0 siccome
+        # viene chiamata reset
+        
+        self.render()
         
         return obs, rewards, dones, info
     
@@ -179,7 +173,7 @@ class RayGraphEnv(MultiAgentEnv):
             "space_obs": self.observation_space,
             "space_act": self.action_space,
             "num_agents": self.num_agents,
-            "episode_limit": self.max_steps,
+            "episode_limit": self.max_steps_per_episode,
             "policy_mapping_info": policy_mapping_dict
         }
         print("env info: " + str(env_info))
@@ -188,6 +182,31 @@ class RayGraphEnv(MultiAgentEnv):
     def close(self):
         return
     
+    def render(self):
+        
+        if not hasattr(self, "fig"):
+            # Create the plot figure and axis only once
+            self.fig, self.ax = plt.subplots()
+        
+        #Clear previous plot
+        self.ax.clear()
+        #Create plot
+        nx.draw_networkx(self._graph.G,
+                         pos=self._graph.pos, 
+                         arrows=None, 
+                         with_labels=False,
+                         node_size=100,
+                         node_color=[self._graph.G.nodes[node]['color'] for node in self._graph.G.nodes()])
+        
+        plt.suptitle("Timestep number of current episode: " + str(self.current_episode_timesteps_counter))
+        plt.title("Episode number " + str(self.current_episode_number))
+        
+        #plt.show(block=False)
+        plt.draw()
+        #plt.plot()
+        #self.ax.clear()
+        plt.pause(1)
+        
     ############## PRIVATE FUNCTIONS #############
         
     def _generate_new_graph(self, side_dim_of_squared_graph):
@@ -224,31 +243,52 @@ class RayGraphEnv(MultiAgentEnv):
             return new_agent_location
         #If not return starting node        
         return agent_starting_node
-
-#Testing
-#NB When testing always comment the below code
-"""
-fake_env_config_1 = {
-    "size": 10,
-    "num_agents": 2,
-    "num_patrollers": 2,
-    "num_attackers": 0,
-    "seed": 0,
-    "episode_limit": 10
     
-}
-
-grafo = RayGraphEnv(fake_env_config_1)
-grafo.reset()
-obs, rew, dones, info = grafo.step({"Patroller_0": 2, "Patroller_1": 1})
-#print(obs)
-#print(rew)
-
-dones = {"__all__": False}
-while not dones["__all__"]:
-    obs, rew, dones, info = grafo.step({"Patroller_0": random.randint(0, 4), "Patroller_1": random.randint(0, 4)})
-    print(obs)
-    print(rew)
-
-print(grafo.get_env_info())
-"""
+class RayGraphEnv_Coop(RayGraphEnv):
+    
+    def step(self, action_dict):
+        
+        obs = {}
+        rewards = {}
+        info = {}
+        
+        done_flag = False
+        
+        #Key, value in dict.items()
+        for agent_id, action in action_dict.items():
+                        
+            # Get the current agent's node location            
+            agent_starting_node = self._agents_locations[agent_id]
+            new_agent_location = self._move_agent(agent_starting_node, action, self._graph)
+                        
+            # Check if the current agent is on a target node
+            self._agents_locations[agent_id] = new_agent_location
+                
+            # Give reward of 1 if agent is on a target node else 0
+            rewards[agent_id] = 1 if new_agent_location in self._target_nodes_locations else 0
+            
+            # Update observation dictionary for this agent -> update only his position since targets are static
+            #print(new_agent_location)            
+            current_pos_and_target_locations_tuples = [self._agents_locations[agent_id]]
+            for j, target in enumerate(self._target_nodes_locations):
+                current_pos_and_target_locations_tuples.append(self._target_nodes_locations[target])
+            obs[agent_id] = {"obs": np.array(current_pos_and_target_locations_tuples).flatten()}
+        
+        #Split the total reward equally among agents to make them work together
+        total_reward = 0
+        #Cumulate rewards to get the total
+        for agent_id, reward in sorted(rewards.items()):
+            total_reward = total_reward + reward
+        #Update the reward values in the rewards dictionary making them equal
+        for agent_id, reward in sorted(rewards.items()):
+            rewards[agent_id] = total_reward / self.num_agents
+        
+        ########### Va definito dones altrimenti simulazione non si fermerà mai!!!!!! ################
+        
+        self.current_episode_timesteps_counter = self.current_episode_timesteps_counter + 1
+        if (self.current_episode_timesteps_counter >= self.max_steps_per_episode):
+            done_flag = True
+        dones = {"__all__": done_flag}
+        
+        return obs, rewards, dones, info
+        

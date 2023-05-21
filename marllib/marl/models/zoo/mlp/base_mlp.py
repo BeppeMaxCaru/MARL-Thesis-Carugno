@@ -48,17 +48,17 @@ class BaseMLP(TorchModelV2, nn.Module):
         TorchModelV2.__init__(self, obs_space, action_space, num_outputs,
                               model_config, name)
         nn.Module.__init__(self)
-
+        
         # decide the model arch
         self.custom_config = model_config["custom_model_config"]
         self.full_obs_space = getattr(obs_space, "original_space", obs_space)
         self.n_agents = self.custom_config["num_agents"]
         self.activation = model_config.get("fcnet_activation")
-
+        
         # encoder
         self.p_encoder = BaseEncoder(model_config, self.full_obs_space)
         self.vf_encoder = BaseEncoder(model_config, self.full_obs_space)
-
+        
         self.p_branch = SlimFC(
             in_size=self.p_encoder.output_dim,
             out_size=num_outputs,

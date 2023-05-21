@@ -64,7 +64,7 @@ print(model[1])
 #seed da qualche parte come parametro opzionale
 ippo.fit(env, 
           model, #Test
-          stop={'timesteps_total': 40000000}, #in RWARE 40 million timesteps used for on-policy
+          stop={'timesteps_total': 40}, #in RWARE 40 million timesteps used for on-policy
           local_mode=True, 
           num_gpus=1,
           num_workers=4,

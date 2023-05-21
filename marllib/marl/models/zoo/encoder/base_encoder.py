@@ -40,7 +40,7 @@ class BaseEncoder(nn.Module):
         # decide the model arch
         self.custom_config = model_config["custom_model_config"]
         self.activation = model_config.get("fcnet_activation")
-
+        
         # encoder
         layers = []
         if "fc_layer" in self.custom_config["model_arch_args"]:
