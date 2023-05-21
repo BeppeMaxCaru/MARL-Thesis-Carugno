@@ -62,9 +62,11 @@ class RayGraphEnv(MultiAgentEnv):
         
         #Seed to initialize and control random number generators and ensure
         #reproducibility of experiments
-        self.seed = env_config["seed"]
-        random.seed(self.seed)
-        np.random.seed(self.seed)
+        #self.seed = int(env_config["seed"])
+        #random.seed(self.seed)
+        #np.random.seed(self.seed)
+        
+        self.max_steps = env_config["episode_limit"]
         
         print(env_config)        
         
@@ -91,7 +93,8 @@ class RayGraphEnv(MultiAgentEnv):
         
         #Cerca di usare "state" per passare in modo più semplice posizione dei nodi target
         
-        self.iter_counter = 0
+        #Used to interrupt episodes when limit timesteps are reached
+        self.timesteps_counter = 0
         
         #Same 5 actions for all patrollers and attackers: Stay, Up, Down, Left, Right
         self.action_space = gym.spaces.Discrete(5)
@@ -106,7 +109,9 @@ class RayGraphEnv(MultiAgentEnv):
                         
     def reset(self):
         
-        self.iter_counter = 0
+        print("Reset being called")
+        
+        self.timesteps_counter = 0
         
         #Reset observations for each agent once reset is called
         obs = {}
@@ -128,18 +133,10 @@ class RayGraphEnv(MultiAgentEnv):
         
         obs = {}
         rewards = {}
-        dones = {"__all__": False}
         info = {}
         
-        self.iter_counter = self.iter_counter + 1
-        print("timestep number: " + str(self.iter_counter))
+        done_flag = False
         
-        """
-        if (self.iter_counter > 5):
-        #if (len(action_dict) == 0):
-            print(self.env_config)
-            sys.exit()
-        """
         #print(action_dict)
         
         #Key, value in dict.items()
@@ -156,8 +153,6 @@ class RayGraphEnv(MultiAgentEnv):
                 
             # Give reward of 1 if agent is on a target node else 0
             rewards[agent_id] = 1 if new_agent_location in self._target_nodes_locations else 0
-            #dones[agent_id] = False
-            #dones[agent_id] = True if new_agent_location in self._target_nodes_locations else False
             
             # Update observation dictionary for this agent -> update only his position since targets are static
             #print(new_agent_location)            
@@ -166,13 +161,16 @@ class RayGraphEnv(MultiAgentEnv):
                 current_pos_and_target_locations_tuples.append(self._target_nodes_locations[target])
             obs[agent_id] = {"obs": np.array(current_pos_and_target_locations_tuples).flatten()}
         
-        #print(obs)
+        print(obs)
         #print(rewards)
-        #print(dones)
-        #print(info)
         
         ########### Va definito dones altrimenti simulazione non si fermerà mai!!!!!! ################
         
+        self.timesteps_counter = self.timesteps_counter + 1
+        print("timestep number: " + str(self.timesteps_counter))
+        if (self.timesteps_counter >= self.max_steps):
+            done_flag = True
+        dones = {"__all__": done_flag}
         
         return obs, rewards, dones, info
     
@@ -181,7 +179,7 @@ class RayGraphEnv(MultiAgentEnv):
             "space_obs": self.observation_space,
             "space_act": self.action_space,
             "num_agents": self.num_agents,
-            "episode_limit": 5,
+            "episode_limit": self.max_steps,
             "policy_mapping_info": policy_mapping_dict
         }
         print("env info: " + str(env_info))
@@ -234,14 +232,10 @@ fake_env_config_1 = {
     "size": 10,
     "num_agents": 2,
     "num_patrollers": 2,
-    "num_attackers": 0
-}
-
-fake_env_config_2 = {
-    "size": 10,
-    "num_agents": 2,
-    "num_patrollers": 1,
-    "num_attackers": 1
+    "num_attackers": 0,
+    "seed": 0,
+    "episode_limit": 10
+    
 }
 
 grafo = RayGraphEnv(fake_env_config_1)
@@ -250,7 +244,8 @@ obs, rew, dones, info = grafo.step({"Patroller_0": 2, "Patroller_1": 1})
 #print(obs)
 #print(rew)
 
-for i in range(10):
+dones = {"__all__": False}
+while not dones["__all__"]:
     obs, rew, dones, info = grafo.step({"Patroller_0": random.randint(0, 4), "Patroller_1": random.randint(0, 4)})
     print(obs)
     print(rew)
