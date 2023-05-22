@@ -64,12 +64,12 @@ print(model[1])
 #seed da qualche parte come parametro opzionale
 ippo.fit(env, 
           model, #Test
-          stop={'timesteps_total': 40}, #in RWARE 40 million timesteps used for on-policy
+          stop={'timesteps_total': 40000000}, #in RWARE 40 million timesteps used for on-policy
           local_mode=True, 
           num_gpus=1,
           num_workers=4,
           share_policy='individual', #Individual so no policy sharing updates for ippo
-          checkpoint_freq=1000000, #Checkpoint every 1 million steps as in the rware paper
+          checkpoint_freq=5000, #Checkpoint every 1 million steps as in the rware paper
           seed=0,
           #parameters to add to get even more control
           #gamma=0.99, #gamma value is the discount rate in the calculation rewards -> to 0 short-term, to 1 long-term
