@@ -164,7 +164,8 @@ class RayGraphEnv(MultiAgentEnv):
         #NB if dones __all__ diventa true current_episode_viene_resettato a 0 siccome
         # viene chiamata reset
         
-        self.render()
+        if self.env_config["enable_rendering"]:
+            self.render()
         
         return obs, rewards, dones, info
     

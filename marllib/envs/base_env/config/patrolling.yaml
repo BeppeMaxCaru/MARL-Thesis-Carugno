@@ -13,6 +13,7 @@ env_args:
   num_attackers: 0
   force_coop: True
   episode_limit: 10
+  enable_rendering: False
 
 #Defines a masking to make some actions invalid for some agents
 mask_flag: False
