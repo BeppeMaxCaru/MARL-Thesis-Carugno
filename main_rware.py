@@ -65,7 +65,7 @@ print(model[1])
 ippo.fit(env, 
           model, #Test
           stop={'timesteps_total': 40000000}, #in RWARE 40 million timesteps used for on-policy
-          local_mode=False, 
+          local_mode=True, 
           num_gpus=1,
           num_workers=4,
           share_policy='individual', #Individual so no policy sharing updates for ippo
