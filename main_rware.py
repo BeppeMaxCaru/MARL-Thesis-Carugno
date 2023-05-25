@@ -38,7 +38,7 @@ print(env[1])
 # initialize algorithm and load hyperparameters
 #mappo = marl.algos.mappo(hyperparam_source="test")
 #Use IPPO as baseline instead of mappo for the project!
-ippo = marl.algos.ippo(hyperparam_source='test')
+ippo = marl.algos.mappo(hyperparam_source='test')
 
 # can add extra algorithm params. remember to check algo_config hyperparams before use
 # mappo = marl.algos.MAPPO(hyperparam_source='common', use_gae=True,  batch_episode=10, kl_coeff=0.2, num_sgd_iter=3)
@@ -68,7 +68,7 @@ ippo.fit(env,
           local_mode=True, 
           num_gpus=1,
           num_workers=4,
-          share_policy='group', #Individual so no policy sharing updates for ippo
+          share_policy='individual', #Individual so no policy sharing updates for ippo
           checkpoint_freq=5000, #Checkpoint every 1 million steps as in the rware paper
           seed=0,
           #parameters to add to get even more control
