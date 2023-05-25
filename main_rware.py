@@ -68,7 +68,7 @@ ippo.fit(env,
           local_mode=True, 
           num_gpus=1,
           num_workers=4,
-          share_policy='individual', #Individual so no policy sharing updates for ippo
+          share_policy='group', #Individual so no policy sharing updates for ippo
           checkpoint_freq=5000, #Checkpoint every 1 million steps as in the rware paper
           seed=0,
           #parameters to add to get even more control
