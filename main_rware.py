@@ -38,7 +38,7 @@ print(env[1])
 # initialize algorithm and load hyperparameters
 #mappo = marl.algos.mappo(hyperparam_source="test")
 #Use IPPO as baseline instead of mappo for the project!
-ippo = marl.algos.mappo(hyperparam_source='test')
+ippo = marl.algos.ippo(hyperparam_source='test')
 
 # can add extra algorithm params. remember to check algo_config hyperparams before use
 # mappo = marl.algos.MAPPO(hyperparam_source='common', use_gae=True,  batch_episode=10, kl_coeff=0.2, num_sgd_iter=3)
