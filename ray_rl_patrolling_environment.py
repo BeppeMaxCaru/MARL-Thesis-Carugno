@@ -100,7 +100,7 @@ class RayGraphEnv(MultiAgentEnv):
         
         #Same 5 actions for all patrollers and attackers: Stay, Up, Down, Left, Right
         self.action_space = gym.spaces.Discrete(5)
-        
+                
         self.env_config = env_config
                                 
     def reset(self):
@@ -189,6 +189,17 @@ class RayGraphEnv(MultiAgentEnv):
             # Create the plot figure and axis only once
             self.fig, self.ax = plt.subplots()
         
+        original_nodes_colours = {}
+        #Color nodes of agents differently only for this function call
+        for agent, node in self._agents_locations.items():
+            original_nodes_colours[node] = self._graph.G.nodes[node]['color']
+            if "Patroller_" in agent:
+                self._graph.G.nodes[node]['color'] = 'blue'
+            elif "Attacker_" in agent:
+                self._graph.G.nodes[node]['color'] = 'red'
+            else:
+                ...
+        
         #Clear previous plot
         self.ax.clear()
         #Create plot
@@ -201,12 +212,20 @@ class RayGraphEnv(MultiAgentEnv):
         
         plt.suptitle("Timestep number of current episode: " + str(self.current_episode_timesteps_counter))
         plt.title("Episode number " + str(self.current_episode_number))
-        
+    
         #plt.show(block=False)
         plt.draw()
         #plt.plot()
         #self.ax.clear()
-        plt.pause(1)
+        plt.pause(0.25)
+        
+        #Reset colours
+        for node, colour in original_nodes_colours.items():
+            #This if fixes cases in which two agents on same node so colour is reset correctly
+            if node in self._target_nodes_locations:
+                self._graph.G.nodes[node]['color'] = 'green'
+            else:
+                self._graph.G.nodes[node]['color'] = 'black'
         
     ############## PRIVATE FUNCTIONS #############
         
@@ -290,6 +309,9 @@ class RayGraphEnv_Coop(RayGraphEnv):
         if (self.current_episode_timesteps_counter >= self.max_steps_per_episode):
             done_flag = True
         dones = {"__all__": done_flag}
+        
+        if self.env_config["enable_rendering"]:
+            self.render()
         
         return obs, rewards, dones, info
         
