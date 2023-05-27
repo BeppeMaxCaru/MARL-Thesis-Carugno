@@ -15,26 +15,11 @@ import patrolling_graph
 #siccome verrà sempre usata all_scenario altrimenti va fornito uno scenario con map_name
 
 #Ex.
-"""
+
 policy_mapping_dict = {
     "all_scenario": {
         "description": "patrolling_test",
         "team_prefix": ("Patroller_", "Attacker_"),
-        "all_agents_one_policy": False, #Defines if agent have a shared policy or each one has its own
-        "one_agent_one_policy": True, #Defines if each agent should have its own policy or not
-    },
-}
-"""
-
-# vs
-
-# Dove patrolling_graph è il "map_name"
-
-policy_mapping_dict = {
-    "patrolling_graph": {
-        "description": "only patrollers",
-        #"team_prefix": ("Patroller_", "Attacker_"),
-        "team_prefix": ("Patroller_",),
         
         #Wheter defining here "all_agents_one_policy" and/or "one_agent_one_policy" depends
         #on the share_policy parameter used in [algo].fit(...)
@@ -43,10 +28,26 @@ policy_mapping_dict = {
         # and "team_prefix" is used to share the policy but only between members of the same groups
         # 3) If share_policy == "individual" "one_agent_one_policy" is used and has to be set True
         
-        "all_agents_one_policy": False, #Defines if agent have a shared policy or each one has its own
+        "all_agents_one_policy": True, #Defines if agent have a shared policy or each one has its own
+        "one_agent_one_policy": True, #Defines if each agent should have its own policy or not
+    },
+}
+
+
+# vs
+
+# Dove patrolling_graph è il "map_name"
+"""
+policy_mapping_dict = {
+    "patrolling_graph": {
+        "description": "only patrollers",
+        "team_prefix": ("Patroller_", "Attacker_"),
+        #"team_prefix": ("Patroller_",),
+        "all_agents_one_policy": True, #Defines if agent have a shared policy or each one has its own
         "one_agent_one_policy": True, #Defines if each agent should have its own policy or not
     }
 }
+"""
 
 class RayGraphEnv(MultiAgentEnv):
     
@@ -62,20 +63,18 @@ class RayGraphEnv(MultiAgentEnv):
         
         #Seed to initialize and control random number generators and ensure
         #reproducibility of experiments
-        #self.seed = int(env_config["seed"])
-        #random.seed(self.seed)
-        #np.random.seed(self.seed)
+        self.seed_for_random_numbers_generators = int(env_config["seed_for_random_numbers_generators"])
+        random.seed(self.seed_for_random_numbers_generators)
+        np.random.seed(self.seed_for_random_numbers_generators)
         
         self.max_steps_per_episode = env_config["episode_limit"]
-        
-        print(env_config)        
-        
+                
         #Add patrollers
         self.agents = ["Patroller_{}".format(i) for i in range(self.num_patrollers)]
         #Add attackers
-        #self.agents = self.agents + ["Attacker_{}".format(i) for i in range(self.num_attackers)]
+        self.agents = self.agents + ["Attacker_{}".format(i) for i in range(self.num_attackers)]
         
-        self.num_agents = len(self.agents)
+        self.num_agents = self.num_patrollers + self.num_attackers
         
         #Generate new graph        
         self._graph = self._generate_new_graph(self._graph_size)
@@ -177,7 +176,6 @@ class RayGraphEnv(MultiAgentEnv):
             "episode_limit": self.max_steps_per_episode,
             "policy_mapping_info": policy_mapping_dict
         }
-        print("env info: " + str(env_info))
         return env_info
     
     def close(self):
@@ -197,11 +195,10 @@ class RayGraphEnv(MultiAgentEnv):
                 self._graph.G.nodes[node]['color'] = 'blue'
             elif "Attacker_" in agent:
                 self._graph.G.nodes[node]['color'] = 'red'
-            else:
-                ...
         
         #Clear previous plot
         self.ax.clear()
+                
         #Create plot
         nx.draw_networkx(self._graph.G,
                          pos=self._graph.pos, 
@@ -213,19 +210,15 @@ class RayGraphEnv(MultiAgentEnv):
         plt.suptitle("Timestep number of current episode: " + str(self.current_episode_timesteps_counter))
         plt.title("Episode number " + str(self.current_episode_number))
     
-        #plt.show(block=False)
         plt.draw()
-        #plt.plot()
-        #self.ax.clear()
         plt.pause(0.25)
         
         #Reset colours
-        for node, colour in original_nodes_colours.items():
+        for node, color in original_nodes_colours.items():
             #This if fixes cases in which two agents on same node so colour is reset correctly
-            if node in self._target_nodes_locations:
-                self._graph.G.nodes[node]['color'] = 'green'
-            else:
-                self._graph.G.nodes[node]['color'] = 'black'
+            self._graph.G.nodes[node]['color'] = 'green' if node in self._target_nodes_locations else 'black'
+
+        return
         
     ############## PRIVATE FUNCTIONS #############
         
@@ -235,7 +228,7 @@ class RayGraphEnv(MultiAgentEnv):
     
     def _get_target_nodes_locations(self, xnetwork_graph):
         #Collect target nodes locations
-        return {node: node for node in xnetwork_graph.G.nodes if xnetwork_graph.G.nodes[node]['color'] == 'red'}
+        return {node: node for node in xnetwork_graph.G.nodes if xnetwork_graph.G.nodes[node]['color'] == 'green'}
     
     def _set_agents_random_starting_locations(self, networkx_graph):
         #Generate and assign random starting positions to agents
@@ -263,6 +256,13 @@ class RayGraphEnv(MultiAgentEnv):
             return new_agent_location
         #If not return starting node        
         return agent_starting_node
+    
+    ############## REWARDS FUNCTIONS #############
+    def one_if_agent_on_target_node_else_zero(agent_location):
+        return 1 if agent_location in self._target_nodes_locations else 0
+    
+    def one_if_agent_on_new_target_node_else_zero(agent_location):
+        ...
     
 class RayGraphEnv_Coop(RayGraphEnv):
     

@@ -17,12 +17,8 @@ from ray_rl_patrolling_environment import RayGraphEnv, RayGraphEnv_Coop
 
 #CUSTOM_ENV
 ENV_REGISTRY["patrolling"] = RayGraphEnv
-#CUSTOM COOP ENV
+#CUSTOM COOP ENV as subclass of RayGraphEnv
 COOP_ENV_REGISTRY["patrolling"] = RayGraphEnv_Coop
-
-#Set seeds
-np.random.seed(0)
-random.seed(0)
 
 #marl.make_env is in marllib.marl in the __init__.py file
 #It returns the environment and its configuration (config used to setup and initialize Ray) 
@@ -31,7 +27,7 @@ env = marl.make_env(
         ############# Default params
         environment_name="patrolling", 
         map_name="patrolling_graph",
-        force_coop=False, #Change this value to True to register the environment as a coop one
+        force_coop=True, #Change this value to True to register the environment as a coop one
         #By making force_coop True the total reward is split equally between agents
         ############# Additional optional params to change yaml file default values -> **env_params
         #NB Only parameters already specified in yaml file can be passed and changed otherwise error!
@@ -134,13 +130,13 @@ ippo.fit(
         ########## Mandatory parameters
         env, # Tuple resulting from make_env
         model, # Tuple resulting from build_model
-        stop={'timesteps_total': 20}, # Dictionary to define stop conditions
+        stop={'timesteps_total': 40000000}, # Dictionary to define stop conditions
         local_mode=True,
-        num_gpus=0,
-        num_workers=1,
-        share_policy='individual', #Può essere "all", "group" oppure "individual"
-        checkpoint_freq=5,
-        seed=0
+        num_gpus=1,
+        num_workers=4,
+        share_policy='group', #Può essere "all", "group" oppure "individual"
+        checkpoint_freq=5000,
+        #seed=0
         #checkpoint_end=False,
 )
 

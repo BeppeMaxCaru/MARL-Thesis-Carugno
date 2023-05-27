@@ -47,7 +47,7 @@ class Graph:
         for node in remaining_nodes:
             if node in color_nodes:
                 # Assign the color red to the node
-                self.G.nodes[node]['color'] = 'red'
+                self.G.nodes[node]['color'] = 'green'
             else:
                 # Assign the color black to the node
                 self.G.nodes[node]['color'] = 'black'

@@ -1,5 +1,6 @@
 env: patrolling
 
+#Questa è la env_config passat ad __init__ dell'environment
 env_args:
   map_name: "patrolling_graph"
   size: 10
@@ -8,12 +9,16 @@ env_args:
   graph_nodes_on_y_axis: 10
   #Add percentage to define how many nodes to remove
   #Add percentage to define how many of the nodes nodes transform into targets
-  num_agents: 2
-  num_patrollers: 2
-  num_attackers: 0
+  #num_agents: 5
+  num_patrollers: 4
+  num_attackers: 4
   force_coop: True
-  episode_limit: 10
+  episode_limit: 500
   enable_rendering: False
+  seed_for_random_numbers_generators: 0
+  #percentage_of_nodes_to_remove: 0.2
+  #percentage_of_edges_to_remove: 0.2
+  #percentage_of_targets_to_create: 0.2
 
 #Defines a masking to make some actions invalid for some agents
 mask_flag: False
