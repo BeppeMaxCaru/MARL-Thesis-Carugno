@@ -262,7 +262,8 @@ class RayGraphEnv(MultiAgentEnv):
     
     ############## REWARDS FUNCTIONS #############
     def one_if_agent_on_target_node_else_zero(agent_location):
-        return 1 if agent_location in self._target_nodes_locations else 0
+        #return 1 if agent_location in self._target_nodes_locations else 0
+        ...
     
     def one_if_agent_on_new_target_node_else_zero(agent_location):
         ...
