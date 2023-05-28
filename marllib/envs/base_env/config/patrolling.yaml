@@ -2,7 +2,7 @@ env: patrolling
 
 #Questa è la env_config passat ad __init__ dell'environment
 env_args:
-  map_name: "patrolling_graph"
+  map_name: "all_scenario" #"patrolling_graph"
   size: 10
   #Instead of size the below parameters could be used to have not just squared graphs
   graph_nodes_on_x_axis: 10
@@ -11,7 +11,7 @@ env_args:
   #Add percentage to define how many of the nodes nodes transform into targets
   #num_agents: 5
   num_patrollers: 4
-  num_attackers: 0 #4
+  num_attackers: 0 #4 #If you want to add also one or more teams of attacking agents using all_scenario add a group "Attacker_{}" for each of them in policy_mapping_dict
   force_coop: True
   episode_limit: 500
   enable_rendering: False
