@@ -263,7 +263,7 @@ class RayGraphEnv(MultiAgentEnv):
     
     def one_if_agent_on_new_target_node_else_zero(agent_location):
         ...
-    
+
 class RayGraphEnv_Coop(RayGraphEnv):
     
     def step(self, action_dict):
@@ -314,4 +314,3 @@ class RayGraphEnv_Coop(RayGraphEnv):
             self.render()
         
         return obs, rewards, dones, info
-        
