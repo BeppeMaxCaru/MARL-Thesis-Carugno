@@ -135,7 +135,7 @@ ippo.fit(
         num_gpus=0,
         num_workers=4,
         share_policy='individual', #Può essere "all", "group" oppure "individual"
-        checkpoint_freq=10000,
+        checkpoint_freq=5000, #checkpoint_freq == train_batch_size for simplicity
         #seed=0
         #checkpoint_end=False,
 )
