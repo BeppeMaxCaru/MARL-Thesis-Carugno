@@ -26,7 +26,7 @@ COOP_ENV_REGISTRY["patrolling"] = RayGraphEnv_Coop
 env = marl.make_env(
         ############# Default params
         environment_name="patrolling", 
-        map_name="patrolling_graph",
+        map_name="only_patrollers",
         force_coop=True, #Change this value to True to register the environment as a coop one
         #By making force_coop True the total reward is split equally between agents
         ############# Additional optional params to change yaml file default values -> **env_params
@@ -130,12 +130,12 @@ ippo.fit(
         ########## Mandatory parameters
         env, # Tuple resulting from make_env
         model, # Tuple resulting from build_model
-        stop={'timesteps_total': 40000000}, # Dictionary to define stop conditions
+        stop={'timesteps_total': 50000000}, # Dictionary to define stop conditions
         local_mode=True,
-        num_gpus=1,
+        num_gpus=0,
         num_workers=4,
         share_policy='group', #Può essere "all", "group" oppure "individual"
-        checkpoint_freq=5000,
+        checkpoint_freq=10000,
         #seed=0
         #checkpoint_end=False,
 )

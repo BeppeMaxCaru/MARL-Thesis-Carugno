@@ -15,7 +15,7 @@ import patrolling_graph
 #siccome verrà sempre usata all_scenario altrimenti va fornito uno scenario con map_name
 
 #Ex.
-
+"""
 policy_mapping_dict = {
     "all_scenario": {
         "description": "patrolling_test",
@@ -32,22 +32,26 @@ policy_mapping_dict = {
         "one_agent_one_policy": True, #Defines if each agent should have its own policy or not
     },
 }
-
+"""
 
 # vs
 
 # Dove patrolling_graph è il "map_name"
-"""
 policy_mapping_dict = {
-    "patrolling_graph": {
-        "description": "only patrollers",
+    "only_patrollers": {
+        "description": "patrollers",
+        "team_prefix": ("Patroller_"),
+        "all_agents_one_policy": True, #Defines if agent have a shared policy or each one has its own
+        "one_agent_one_policy": True, #Defines if each agent should have its own policy or not
+    },
+    "patrollers_and_attackers": {
+        "description": "patrollers and attackers",
         "team_prefix": ("Patroller_", "Attacker_"),
-        #"team_prefix": ("Patroller_",),
         "all_agents_one_policy": True, #Defines if agent have a shared policy or each one has its own
         "one_agent_one_policy": True, #Defines if each agent should have its own policy or not
     }
 }
-"""
+
 
 class RayGraphEnv(MultiAgentEnv):
     

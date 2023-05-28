@@ -11,7 +11,7 @@ env_args:
   #Add percentage to define how many of the nodes nodes transform into targets
   #num_agents: 5
   num_patrollers: 4
-  num_attackers: 4
+  num_attackers: 0 #4
   force_coop: True
   episode_limit: 500
   enable_rendering: False
