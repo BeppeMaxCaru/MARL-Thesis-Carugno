@@ -26,15 +26,16 @@
 
 algo_args:
   batch_episode: 10 #Original is 2
-  learning_starts_episode: 2 #Original is 2
-  twin_q: False #Original is False
+  learning_starts_episode: 10 #Original is 2 #Made it 10 to make it consistent with make it consistent with IPPO/ITRPO/IA2C
+  twin_q: False #Original is False #If kept False it is the pure DDPG, not a Twin DDPG 
   prioritized_replay: False #Original is False
   smooth_target_policy: False #Original is False
-  n_step: 1 #Original is 1
+  n_step: 1 #Original is 1 -> keeping it to 1 means considering the expected reward only of next step instead of multiple future steps
   critic_lr: 0.0005 #Original is 0.0005
   actor_lr: 0.0005 #Original is 0.0005
-  buffer_size_episode: 10 #Original is 10
-  target_network_update_freq_episode: 1 #Original is 1
-  tau: 0.002 #Original is 0.002
+  buffer_size_episode: 10 #Original is 10 #10 to have a size of 5000 which is 10 episodes
+  target_network_update_freq_episode: 10 #Original is 1 #Made 10 to make it consistent with IPPO/ITRPO/IA2C 
+  tau: 0.01 #Original is 0.002 -> 0.2% #Soft update parameter between 0 and 1 used to decide percentage of target network weights to update
+  #Using tau as soft update parameter allows to control exploration vs exploitation and reduce oscillations during training
   batch_mode: "complete_episodes"
 

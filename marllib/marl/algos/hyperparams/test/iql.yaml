@@ -23,12 +23,14 @@
 # IQL parameters
 
 algo_args:
-  batch_episode:  2
-  lr: 0.0005
-  rollout_fragment_length: 1
-  buffer_size: 10
-  target_network_update_freq: 100
-  final_epsilon: 0.05
-  epsilon_timesteps: 50000
-  optimizer: "rmsprop" # "adam"
-  reward_standardize: True
+  batch_episode: 10 #Original is 2
+  lr: 0.0005 #Original is 0.0005
+  rollout_fragment_length: 5000 #Original is 1 # Set to 5000 to make it consistent with IPPO/ITRPO/IA2C
+  #So training performed after 5000 steps which is 500 steps per episodes * 10 batched episodes
+  buffer_size: 5000 #Original is 10 #Buffer size of 5000 to collect 5000 experiences NB Watch out for memory footprint!
+  target_network_update_freq: 5000 #Original is 100 #Raised to 5000 to make it consistent with IPPO/ITRPO/IA2C
+  final_epsilon: 0.01 #Original is 0.05 -> used for epsilon-greedy choice of action during learning: ex. with 0.1 10% of picking random action, 90% of picking current best action
+  #The final epsilon is the minimum epsilon value that can be reached using decay -> this case 0.01
+  epsilon_timesteps: 50000 #Original is 50000 -> decay rate of epsilon parameter: after how many steps lower epsilon
+  optimizer: "adam" # "adam" #Original is "rmsprop"
+  reward_standardize: False # Original is True
