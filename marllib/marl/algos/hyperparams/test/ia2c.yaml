@@ -31,4 +31,4 @@ algo_args:
   batch_episode:  10 #Original is 2
   batch_mode: "complete_episodes" #Original is complete episodes
   lr: 0.0005 #Original is 0.0005
-  entropy_coeff: 0.001 #Original is 0.1
+  entropy_coeff: 0.01 #Original is 0.1 ?

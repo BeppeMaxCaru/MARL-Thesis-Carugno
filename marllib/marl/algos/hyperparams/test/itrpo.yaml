@@ -26,15 +26,19 @@ algo_args:
   use_gae: True
   lambda: 1.0 #Original is 1.0
   gamma: 0.99 #Original is 0.99
-  batch_episode: 2 #Original is 2
+  batch_episode: 10 #Original is 2
   kl_coeff: 0.2 #Original is 0.2
   num_sgd_iter: 1 #Original is 1
   grad_clip: 10 #Original is 10
-  clip_param: 0.3 #Original is 0.3
+  clip_param: 0.2 #Original is 0.3
   vf_loss_coeff: 1.0 #Original is 1.0
   entropy_coeff: 0.01 #Original is 0.01
   vf_clip_param: 10.0 #Original is 10.0
   batch_mode: "complete_episodes" #Original is complete episodes
-  kl_threshold: 0.00001 #Original is 0.00001
-  accept_ratio: 0.5 #Original is 0.5
-  critic_lr: 0.00005 #Original is 0.00005
+  kl_threshold: 0.01 #Original is 0.00001
+  #kl_threshold parameter represents the Kullback-Leibler (KL) divergence threshold, which controls how much the updated policy can deviate from the old policy
+  accept_ratio: 0.1 #Original is 0.5 #criterion to determine whether a policy update is accepted during the line search process. 
+  #In the update_actor method, the loss_improve / expected_improve ratio is compared against accept_ratio to decide whether to accept the updated policy. If the ratio is greater than or equal to accept_ratio, line search is considered successful.
+  #If 0.1, meaning that the improvement in the loss should be at least 10% of the expected improvement
+  #Originals kl_threshold and accept_ratio values can be find in trust_regions.py
+  critic_lr: 0.0005 #Original is 0.00005 #learning rate for updating the critic network
