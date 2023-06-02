@@ -19,7 +19,7 @@ import patrolling_graph
 policy_mapping_dict = {
     "all_scenario": {
         "description": "patrolling_all_scenario",
-        "team_prefix": ("Patroller_"), # OR ("Patroller_", "Attacker_") if also attackers != 0
+        "team_prefix": ("Patroller_",), # OR ("Patroller_", "Attacker_") if also attackers != 0
         
         #Wheter defining here "all_agents_one_policy" and/or "one_agent_one_policy" depends
         #on the share_policy parameter used in [algo].fit(...)
@@ -35,17 +35,17 @@ policy_mapping_dict = {
 
 # vs
 """
-# Dove patrolling_graph è il "map_name"
+# Dove only_patrollers è il "map_name"
 policy_mapping_dict = {
     "only_patrollers": {
         "description": "patrollers",
-        "team_prefix": ("Patroller_"),
+        "team_prefix": ("Patroller_",),
         "all_agents_one_policy": True, #Defines if agent have a shared policy or each one has its own
         "one_agent_one_policy": True, #Defines if each agent should have its own policy or not
     },
     "patrollers_and_attackers": {
         "description": "patrollers and attackers",
-        "team_prefix": ("Patroller_", "Attacker_"),
+        "team_prefix": ("Patroller_", "Attacker_",),
         "all_agents_one_policy": True, #Defines if agent have a shared policy or each one has its own
         "one_agent_one_policy": True, #Defines if each agent should have its own policy or not
     }
@@ -76,7 +76,7 @@ class RayGraphEnv(MultiAgentEnv):
         self.agents = ["Patroller_{}".format(i) for i in range(self.num_patrollers)]
         #Add attackers
         self.agents = self.agents + ["Attacker_{}".format(i) for i in range(self.num_attackers)]
-        
+                
         self.num_agents = self.num_patrollers + self.num_attackers
         
         #Generate new graph        
