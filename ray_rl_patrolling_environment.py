@@ -82,17 +82,27 @@ class RayGraphEnv(MultiAgentEnv):
         #Generate new graph        
         self._graph = self._generate_new_graph(self._graph_size)
         #Collect new target nodes locations from graph as a dictionary
+        #Collect them here since they're static so they do not change in resets
         self._target_nodes_locations = self._get_target_nodes_locations(self._graph)
+        
+        #Used to create more complex reward functions
+        self._last_visited_target_nodes_by_agents = {} #Dict agent to last visited nodes from him
+        self._visited_target_nodes_by_group = [] #list with visited target from group o agents
+        self._target_nodes_priority_queue = []
         
         #Since I cannot use a nested dict in obs so I flatten it to a big Box
         #Max values are minimum and maximum graph size with shape as explained below
         self.observation_space = gym.spaces.Dict({
             #shape = (agents positions and targets  positions) * 2 since both are tuples of 2 elems
-            "obs": gym.spaces.Box(low=0, high=self._graph_size, shape=(2 + len(self._target_nodes_locations)*2,), dtype=np.int32),
+            #"obs": gym.spaces.Box(low=0, high=self._graph_size, shape=(2 + len(self._target_nodes_locations)*2,), dtype=np.int32),
+            
+            #Obs space with just agent position -> this is the correct one!
+            "obs": gym.spaces.Box(low=0, high=self._graph_size, shape=(2,), dtype=np.int32),
+
             #"state": gym.spaces.Box(low=0, high=self._graph_size, shape=(len(self._target_nodes_locations)*2,), dtype=np.int32),
             #"opponent_obs": None,
         })
-        #Cerca di usare "state" per passare in modo più semplice posizione dei nodi target?
+        #Cerca di usare "state" per passare in modo più semplice posizione dei nodi target? Non serve posizione nodi siccome sono statici
         
         #Used to interrupt episodes when limit timesteps are reached
         self.current_episode_timesteps_counter = 0
@@ -101,7 +111,9 @@ class RayGraphEnv(MultiAgentEnv):
         self.total_timesteps_counter = 0
         
         #Same 5 actions for all patrollers and attackers: Stay, Up, Down, Left, Right
-        self.action_space = gym.spaces.Discrete(5)
+        #self.action_space = gym.spaces.Discrete(5)
+        #Make it continuous but discretized through the dtype -> this way IDDPG works!
+        self.action_space = gym.spaces.Box(low=0, high=4, shape=(), dtype=np.int32)
                 
         self.env_config = env_config
                                 
@@ -115,10 +127,21 @@ class RayGraphEnv(MultiAgentEnv):
         #Assign new random starting location to agents as a dictionary
         self._agents_locations = self._set_agents_random_starting_locations(self._graph)
         
+        #Set array of last visited nodes by agents
+        self._last_visited_target_nodes_by_agents = {}
+        for i, agent in enumerate(self.agents):
+            if self._agents_locations[agent] in self._target_nodes_locations:
+                self._last_visited_target_nodes_by_agents[agent] = self._agents_locations[agent]
+            
+        #Reset queue and fill it
+        self._target_nodes_priority_queue = []
+        for target in self._target_nodes_locations:
+            self._target_nodes_priority_queue.append(target)
+        
         for i, agent in enumerate(self.agents):
             current_pos_and_target_locations_tuples = [self._agents_locations[agent]]
-            for j, target in enumerate(self._target_nodes_locations):
-                current_pos_and_target_locations_tuples.append(self._target_nodes_locations[target])
+            #for j, target in enumerate(self._target_nodes_locations):
+                #current_pos_and_target_locations_tuples.append(self._target_nodes_locations[target])
             obs[agent] = {"obs": np.array(current_pos_and_target_locations_tuples, dtype=np.int32).flatten()}
                 
         return obs
@@ -138,19 +161,32 @@ class RayGraphEnv(MultiAgentEnv):
             agent_starting_node = self._agents_locations[agent_id]
             new_agent_location = self._move_agent(agent_starting_node, action, self._graph)
                         
-            # Check if the current agent is on a target node
             self._agents_locations[agent_id] = new_agent_location
+            
+            ######### REWARD FUNCTIONS PART #################################
                 
             # Give reward of 1 if agent is on a target node else 0
-            rewards[agent_id] = 1 if new_agent_location in self._target_nodes_locations else 0
+            rewards[agent_id] = self._one_if_agent_on_target_node_else_zero(agent_id, new_agent_location)
             
+            #Give 1 if agent on target node and target node is different than the previously visited one by the agent
+            #rewards[agent_id] = self._one_if_agent_on_new_target_node_else_zero(agent_id, new_agent_location)
+            
+            #Give 1 if the target node is the first one in the queue so the last visited
+            #rewards[agent_id] = self._minimize_max_idleness(agent_id, new_agent_location)
+
+            #Give 1 if the node visited is target, is different than previous target node
+            #and there's not another patroller on it?
+            
+            ########## END REWARD FUNCTIONS ##################################
+
             # Update observation dictionary for this agent -> update only his position since targets are static
             #print(new_agent_location)            
             current_pos_and_target_locations_tuples = [self._agents_locations[agent_id]]
-            for j, target in enumerate(self._target_nodes_locations):
-                current_pos_and_target_locations_tuples.append(self._target_nodes_locations[target])
+            #Comment the for loop to use just the agent location in the observation space
+            #for j, target in enumerate(self._target_nodes_locations):
+                #current_pos_and_target_locations_tuples.append(self._target_nodes_locations[target])
             obs[agent_id] = {"obs": np.array(current_pos_and_target_locations_tuples).flatten()}
-        
+            
         ########### Va definito dones altrimenti simulazione non si fermerà mai!!!!!! ################
         
         #If episode limit not reached increase timesteps counters
@@ -261,13 +297,64 @@ class RayGraphEnv(MultiAgentEnv):
         return agent_starting_node
     
     ############## REWARDS FUNCTIONS #############
-    def one_if_agent_on_target_node_else_zero(agent_location):
+    def _one_if_agent_on_target_node_else_zero(self, agent_id, new_agent_location):
+        reward = 0
         #return 1 if agent_location in self._target_nodes_locations else 0
-        ...
+        reward = 1 if new_agent_location in self._target_nodes_locations else 0
+        return reward
     
-    def one_if_agent_on_new_target_node_else_zero(agent_location):
-        ...
+    def _one_if_agent_on_new_target_node_else_zero(self, agent_id, new_agent_location):
+        reward = 0
+        reward = 1 if (   new_agent_location in self._target_nodes_locations
+                     and
+                        self._last_visited_target_nodes_by_agents.get(agent_id) is not None 
+                     and
+                        self._last_visited_target_nodes_by_agents.get(agent_id) is not new_agent_location) else 0
+        #Update the most recently visited target node
+        if new_agent_location in self._target_nodes_locations:
+            self._last_visited_target_nodes_by_agents[agent_id] = new_agent_location
+        #Return reward    
+        return reward
 
+    def _one_if_agent_on_new_target_for_all_group_else_zero(self, agent_id, new_agent_location):
+        reward = 0
+        if new_agent_location in self._target_nodes_locations:
+            #Check if target already visited by group
+            if new_agent_location not in self._visited_target_nodes_by_group:
+                reward = 1
+                self._visited_target_nodes_by_group.append(new_agent_location)
+        #If all targets already visited by the group empty visited targets list and restart populating it
+        if set(self._target_nodes_locations) == set(self._visited_target_nodes_by_group):
+            self._visited_target_nodes_by_group = []
+        return reward
+        
+    def _minimize_max_idleness(self, agent_id, new_agent_location):
+        #Use priority queue to track highest priority target nodes
+        reward = 0
+        #Agent is on highest priority node
+        if new_agent_location == self._target_nodes_priority_queue[0]:
+            reward = 1
+        #If node is target but not high priority one put it at the back of queue with no reward
+        if new_agent_location in self._target_nodes_locations:
+            #Update queue by adding node at the back
+            self._target_nodes_priority_queue.append(self._target_nodes_priority_queue[0])
+            self._target_nodes_priority_queue.pop(0)
+        return reward
+    
+    def _minimize_average_idleness(self, agent_id, new_agent_location):
+        #Use priority queue to track highest priority target nodes
+        reward = 0
+        #Agent is on target node with priority higher than average
+        if new_agent_location in self._target_nodes_priority_queue:
+            node_position_in_queue = self._target_nodes_priority_queue.index(new_agent_location)
+            if (node_position_in_queue < (len(self._target_nodes_priority_queue) / 2)):
+                #Give reward if target is in starting half of the queue
+                reward = 1
+            #Update queue by adding the visited target node at the back but reward only if starting half of the queue
+            self._target_nodes_priority_queue.append(self._target_nodes_priority_queue[node_position_in_queue])
+            self._target_nodes_priority_queue.pop(node_position_in_queue)
+        return reward
+    
 class RayGraphEnv_Coop(RayGraphEnv):
     
     def step(self, action_dict):
@@ -287,17 +374,34 @@ class RayGraphEnv_Coop(RayGraphEnv):
                         
             # Check if the current agent is on a target node
             self._agents_locations[agent_id] = new_agent_location
-                
+            
+            ############# REWARD FUNCTIONS ######################
+            
             # Give reward of 1 if agent is on a target node else 0
-            rewards[agent_id] = 1 if new_agent_location in self._target_nodes_locations else 0
+            #rewards[agent_id] = self._one_if_agent_on_target_node_else_zero(agent_id, new_agent_location)
+            
+            #Give 1 if agent on target node and target node is different than the previously visited one
+            rewards[agent_id] = self._one_if_agent_on_new_target_node_else_zero(agent_id, new_agent_location)
+            
+            #Give 1 if target still not visited by other agents of same team else 0
+            #rewards[agent_id] = self._one_if_agent_on_new_target_for_all_group_else_zero(agent_id, new_agent_location)
+
+            #Give 1 if the target node is the first one in the queue so the last visited
+            #rewards[agent_id] = self._minimize_max_idleness(agent_id, new_agent_location)
+            
+            #Give 1 if the target node is in first half of the queue so not one of the most visited recently
+            #rewards[agent_id] = self._minimize_average_idleness(agent_id, new_agent_location)
+            
+            ############# REWARD FUNCTIONS SECTION END ######################
             
             # Update observation dictionary for this agent -> update only his position since targets are static
-            #print(new_agent_location)            
+            #print(new_agent_location)           
             current_pos_and_target_locations_tuples = [self._agents_locations[agent_id]]
-            for j, target in enumerate(self._target_nodes_locations):
-                current_pos_and_target_locations_tuples.append(self._target_nodes_locations[target])
+            #Comment the for loop to use just the agent location in the observation space
+            #for j, target in enumerate(self._target_nodes_locations):
+                #current_pos_and_target_locations_tuples.append(self._target_nodes_locations[target])
             obs[agent_id] = {"obs": np.array(current_pos_and_target_locations_tuples).flatten()}
-        
+            
         #Split the total reward equally among agents to make them work together
         total_reward = 0
         #Cumulate rewards to get the total
