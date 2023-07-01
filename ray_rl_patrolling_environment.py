@@ -89,6 +89,9 @@ class RayGraphEnv(MultiAgentEnv):
         self._last_visited_target_nodes_by_agents = {} #Dict agent to last visited nodes from him
         self._visited_target_nodes_by_group = [] #list with visited target from group o agents
         self._target_nodes_priority_queue = []
+        #Target nodes importance values extracted using Poisson distribution
+        self._target_nodes_importance_values = self.get_values_from_poisson_distr(self._target_nodes_locations)
+        
         
         #Since I cannot use a nested dict in obs so I flatten it to a big Box
         #Max values are minimum and maximum graph size with shape as explained below
@@ -164,12 +167,9 @@ class RayGraphEnv(MultiAgentEnv):
             self._agents_locations[agent_id] = new_agent_location
             
             ######### REWARD FUNCTIONS PART #################################
-                
-            # Give reward of 1 if agent is on a target node else 0
-            rewards[agent_id] = self._one_if_agent_on_target_node_else_zero(agent_id, new_agent_location)
-            
+                            
             #Give 1 if agent on target node and target node is different than the previously visited one by the agent
-            #rewards[agent_id] = self._one_if_agent_on_new_target_node_else_zero(agent_id, new_agent_location)
+            #rewards[agent_id] = self._one_if_agent_on_new_target_for_all_group_else_zero(agent_id, new_agent_location)
             
             #Give 1 if the target node is the first one in the queue so the last visited
             #rewards[agent_id] = self._minimize_max_idleness(agent_id, new_agent_location)
@@ -355,6 +355,17 @@ class RayGraphEnv(MultiAgentEnv):
             self._target_nodes_priority_queue.pop(node_position_in_queue)
         return reward
     
+    def poisson_adversarial_function(self, target_nodes_location):
+        target_nodes_importance_values = {}
+        for node, position in target_nodes_location.items():
+            #Assign to each node an importance value using a poisson distribution
+            #Example with lambda 1
+            #Change the values every episode or not???
+            target_nodes_importance_values[node] = np.random.poisson(lam=1.0, size=1)[0]
+        return target_nodes_importance_values
+            
+        
+    
 class RayGraphEnv_Coop(RayGraphEnv):
     
     def step(self, action_dict):
@@ -375,16 +386,10 @@ class RayGraphEnv_Coop(RayGraphEnv):
             # Check if the current agent is on a target node
             self._agents_locations[agent_id] = new_agent_location
             
-            ############# REWARD FUNCTIONS ######################
-            
-            # Give reward of 1 if agent is on a target node else 0
-            #rewards[agent_id] = self._one_if_agent_on_target_node_else_zero(agent_id, new_agent_location)
-            
-            #Give 1 if agent on target node and target node is different than the previously visited one
-            rewards[agent_id] = self._one_if_agent_on_new_target_node_else_zero(agent_id, new_agent_location)
+            ############# REWARD FUNCTIONS ######################            
             
             #Give 1 if target still not visited by other agents of same team else 0
-            #rewards[agent_id] = self._one_if_agent_on_new_target_for_all_group_else_zero(agent_id, new_agent_location)
+            rewards[agent_id] = self._one_if_agent_on_new_target_for_all_group_else_zero(agent_id, new_agent_location)
 
             #Give 1 if the target node is the first one in the queue so the last visited
             #rewards[agent_id] = self._minimize_max_idleness(agent_id, new_agent_location)

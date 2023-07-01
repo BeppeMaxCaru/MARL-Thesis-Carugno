@@ -138,6 +138,7 @@ ippo.fit(
         checkpoint_freq=5000, #checkpoint_freq == train_batch_size for simplicity
         #seed=0
         #checkpoint_end=False,
+        #restore_path={"model_path": "", "params_path": "exp_results\ippo_mlp_all_scenario\IPPOTrainer_patrolling_all_scenario_f530d_00000_0_2023-06-25_11-30-43\params.json"}
 )
 
 print("finished training successfully")
