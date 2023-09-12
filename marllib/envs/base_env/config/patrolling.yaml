@@ -2,7 +2,7 @@ env: patrolling
 
 #Questa è la env_config passat ad __init__ dell'environment
 env_args:
-  map_name: "all_scenario" #"patrolling_graph"
+  map_name: "all_scenario" #"all_scenario" #"patrolling_graph" #"only_patrollers"
   size: 10
   #Instead of size the below parameters could be used to have not just squared graphs
   graph_nodes_on_x_axis: 10

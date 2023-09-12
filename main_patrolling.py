@@ -130,11 +130,11 @@ ippo.fit(
         ########## Mandatory parameters
         env, # Tuple resulting from make_env
         model, # Tuple resulting from build_model
-        stop={'timesteps_total': 50000000}, # Dictionary to define stop conditions
+        stop={"timesteps_total": 50000000}, # Dictionary to define stop conditions
         local_mode=True,
         num_gpus=0,
         num_workers=4,
-        share_policy='individual', #Può essere "all", "group" oppure "individual"
+        share_policy="individual", #Può essere "all", "group" oppure "individual"
         checkpoint_freq=5000, #checkpoint_freq == train_batch_size for simplicity
         #seed=0
         #checkpoint_end=False,

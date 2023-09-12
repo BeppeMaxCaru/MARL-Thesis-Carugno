@@ -89,9 +89,13 @@ class RayGraphEnv(MultiAgentEnv):
         self._last_visited_target_nodes_by_agents = {} #Dict agent to last visited nodes from him
         self._visited_target_nodes_by_group = [] #list with visited target from group o agents
         self._target_nodes_priority_queue = []
-        #Target nodes importance values extracted using Poisson distribution
-        self._target_nodes_importance_values = self.get_values_from_poisson_distr(self._target_nodes_locations)
         
+        #Target nodes importance values samples using exp distribution
+        self._target_nodes_importance_values = self._get_target_nodes_importance_values_using_exp_distribution(self._target_nodes_locations)
+        #Target nodes importance values extracted using Poisson distribution
+        self._target_nodes_attacks_frequencies = self._get_attacks_frequency_using_poisson_distribution(self._target_nodes_locations)
+        #Attacks per episode not needed, just use distributions to make attacks happen
+        #self.attacks_per_episode = 100
         
         #Since I cannot use a nested dict in obs so I flatten it to a big Box
         #Max values are minimum and maximum graph size with shape as explained below
@@ -355,14 +359,66 @@ class RayGraphEnv(MultiAgentEnv):
             self._target_nodes_priority_queue.pop(node_position_in_queue)
         return reward
     
-    def poisson_adversarial_function(self, target_nodes_location):
-        target_nodes_importance_values = {}
+    def _get_attacks_frequency_using_poisson_distribution(self, target_nodes_location):
+        target_nodes_attacks_frequencies = {}
         for node, position in target_nodes_location.items():
-            #Assign to each node an importance value using a poisson distribution
+            #Assign to each node attack frequency value using a poisson distribution
+            #Change the values every episode or not???
+            #Lambda 0.01 means 0.01 attack each timestep
+            #Over an episode of 500 timesteps it means an average of 5 attacks
+            #Adjust this lambda depending on context
+            target_nodes_attacks_frequencies[node] = np.random.poisson(lam=0.01, size=1)[0]
+        return target_nodes_attacks_frequencies
+    
+    def _get_target_nodes_importance_values_using_exp_distribution(self, target_nodes_location):
+        target_nodes_importance_values = {}
+        importance_values = []
+        for node, position in target_nodes_location.items():
+            #Assign to each node an importance value using an exp distribution
             #Example with lambda 1
             #Change the values every episode or not???
-            target_nodes_importance_values[node] = np.random.poisson(lam=1.0, size=1)[0]
-        return target_nodes_importance_values
+            importance_value = np.random.exponential(scale=1.0, size=1)[0]
+            #importance_value = np.random.uniform(low=1, high=10, size=None)
+            importance_values.append(importance_value)
+            target_nodes_importance_values[node] = importance_value
+        
+        #Problem with max value as normalizer the highest importance target is attacked every step!
+        max_importance_value = np.max(importance_values)
+        normalized_importance_values = {node: importance / max_importance_value for node, importance in target_nodes_importance_values.items()}
+
+        return normalized_importance_values
+    
+    def _reward_function_based_on_attacks(self, agent_id, new_agent_location):
+        reward = 0
+        #Check if agent is on target
+        if new_agent_location in self._target_nodes_locations:
+            #OLD APPROACH
+            """
+            #Retrieve attack frequency for the target node
+            frequency = self._get_attacks_frequency_using_poisson_distribution(new_agent_location)
+            #Find if there's an attack on the current target, if yes assign a reward of 1
+            #if ((self.total_timesteps_counter % self.max_steps_per_episode) % frequency) == 0:
+            if (self.current_episode_timesteps_counter % frequency) == 0:
+                reward = 1
+            """
+            
+            #NEW REFACTORED APPROACH
+            #If an attack happens give reward of 1
+            if np.random.poisson(lam=0.01, size=1) > 0:
+                reward = 1
+                
+            #Can be simplified using just a binomial
+            #Coin flip with one attack every 100 timesteps
+            if np.random.binomial(n=100, p=0.01) > 0:
+                reward = 1
+                
+            #Improved even more by incorporating importance values assigned to targets
+            #Realistic distributions to assign importance values are: exponential, pareto and power-law
+            #Then adjust the binomial parameters based on the importance value of the visited target node
+            if np.random.binomial(n=1, p=self._target_nodes_importance_values) > 0:
+                reward = 1
+            
+        return reward
             
         
     
@@ -389,13 +445,13 @@ class RayGraphEnv_Coop(RayGraphEnv):
             ############# REWARD FUNCTIONS ######################            
             
             #Give 1 if target still not visited by other agents of same team else 0
-            rewards[agent_id] = self._one_if_agent_on_new_target_for_all_group_else_zero(agent_id, new_agent_location)
+            #rewards[agent_id] = self._one_if_agent_on_new_target_for_all_group_else_zero(agent_id, new_agent_location)
 
             #Give 1 if the target node is the first one in the queue so the last visited
             #rewards[agent_id] = self._minimize_max_idleness(agent_id, new_agent_location)
             
             #Give 1 if the target node is in first half of the queue so not one of the most visited recently
-            #rewards[agent_id] = self._minimize_average_idleness(agent_id, new_agent_location)
+            rewards[agent_id] = self._minimize_average_idleness(agent_id, new_agent_location)
             
             ############# REWARD FUNCTIONS SECTION END ######################
             
