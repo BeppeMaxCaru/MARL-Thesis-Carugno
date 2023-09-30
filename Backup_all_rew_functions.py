@@ -97,7 +97,6 @@ class RayGraphEnv(MultiAgentEnv):
         #Attacks per episode not needed, just use distributions to make attacks happen
         #self.attacks_per_episode = 100
         
-        #self._targets_nodes_future_attacks_schema = get
         #New array for adversarial function
         for target in self._target_nodes_locations:
             self._target_nodes_ongoing_attacks_statuses[target]["attack_start_timestep" : 0, "attack_timesteps_lenght": 0]
@@ -154,7 +153,6 @@ class RayGraphEnv(MultiAgentEnv):
         #Add here reset of array of attacks
         for target in self._target_nodes_locations:
             self._target_nodes_ongoing_attacks_statuses[target]["attack_start_timestep" : 0, "attack_timesteps_lenght": 0]
-        
         
         for i, agent in enumerate(self.agents):
             current_pos_and_target_locations_tuples = [self._agents_locations[agent]]
@@ -312,6 +310,36 @@ class RayGraphEnv(MultiAgentEnv):
         return agent_starting_node
     
     ############## REWARDS FUNCTIONS #############
+    def _one_if_agent_on_target_node_else_zero(self, agent_id, new_agent_location):
+        reward = 0
+        #return 1 if agent_location in self._target_nodes_locations else 0
+        reward = 1 if new_agent_location in self._target_nodes_locations else 0
+        return reward
+    
+    def _one_if_agent_on_new_target_node_else_zero(self, agent_id, new_agent_location):
+        reward = 0
+        reward = 1 if (   new_agent_location in self._target_nodes_locations
+                     and
+                        self._last_visited_target_nodes_by_agents.get(agent_id) is not None 
+                     and
+                        self._last_visited_target_nodes_by_agents.get(agent_id) is not new_agent_location) else 0
+        #Update the most recently visited target node
+        if new_agent_location in self._target_nodes_locations:
+            self._last_visited_target_nodes_by_agents[agent_id] = new_agent_location
+        #Return reward    
+        return reward
+
+    def _one_if_agent_on_new_target_for_all_group_else_zero(self, agent_id, new_agent_location):
+        reward = 0
+        if new_agent_location in self._target_nodes_locations:
+            #Check if target already visited by group
+            if new_agent_location not in self._visited_target_nodes_by_group:
+                reward = 1
+                self._visited_target_nodes_by_group.append(new_agent_location)
+        #If all targets already visited by the group empty visited targets list and restart populating it
+        if set(self._target_nodes_locations) == set(self._visited_target_nodes_by_group):
+            self._visited_target_nodes_by_group = []
+        return reward
         
     def _minimize_max_idleness(self, agent_id, new_agent_location):
         #Use priority queue to track highest priority target nodes
@@ -401,27 +429,7 @@ class RayGraphEnv(MultiAgentEnv):
                 reward = 1
             
         return reward
-    
-    def gen_target_attacks_start_and_length_values(target_nodes_location):
             
-        attacks_tracker_dict = {}
-                
-        #Range of values that can be sampled is equal to 1/scale in exp distribution
-        importance_values = np.round(np.random.exponential(scale=100, size=len(target_nodes_location))).astype(int)
-        #Scale them to upper limit of 1
-        scaled_importance_vales = importance_values / max(importance_values)
-                
-        for i in range(len(target_nodes_location)):
-            #sort to order attacks in time
-            attack_start_times = np.sort(np.random.choice(episode_duration, num_attacks, replace=False))
-            #Extract random attack lenght
-            attack_durations = np.random.randint(1, max_attack_duration, num_attacks)
-            
-            final_attacks_duration = np.ceil(attack_durations * scaled_importance_vales[i])
-            
-            attacks_tracker_dict[target_nodes_location[i]][attack_start_times, final_attacks_duration]
-        
-        return attacks_tracker_dict            
         
     
 class RayGraphEnv_Coop(RayGraphEnv):
