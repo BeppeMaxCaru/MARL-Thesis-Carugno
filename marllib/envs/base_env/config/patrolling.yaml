@@ -16,6 +16,8 @@ env_args:
   episode_limit: 500
   enable_rendering: False
   seed_for_random_numbers_generators: 0
+  num_attacks_per_target: 10
+  max_attack_lenght: 50
   #percentage_of_nodes_to_remove: 0.2
   #percentage_of_edges_to_remove: 0.2
   #percentage_of_targets_to_create: 0.2

@@ -50,7 +50,7 @@ print(env[1])
 #Three options: $ENV, "test" or "common"
 #Their respective parameters are in the marllib.marl.algos.hyperparameters folders
 #Better not to touch them in the original yaml files and pass them here as additional parameters
-ippo = marl.algos.matrpo(
+ippo = marl.algos.ippo(
         ########### Default mandatory parameter
         hyperparam_source="test"
         ########### Additional parameters to override the default ones in test.yaml

@@ -71,6 +71,9 @@ class RayGraphEnv(MultiAgentEnv):
         np.random.seed(self.seed_for_random_numbers_generators)
         
         self.max_steps_per_episode = env_config["episode_limit"]
+        
+        self.num_attacks_per_target = env_config["num_attacks_per_target"]
+        self.max_attack_lenght = env_config["max_attack_lenght"]
                 
         #Add patrollers
         self.agents = ["Patroller_{}".format(i) for i in range(self.num_patrollers)]
@@ -89,19 +92,12 @@ class RayGraphEnv(MultiAgentEnv):
         self._last_visited_target_nodes_by_agents = {} #Dict agent to last visited nodes from him
         self._visited_target_nodes_by_group = [] #list with visited target from group o agents
         self._target_nodes_priority_queue = []
-        
-        #Target nodes importance values samples using exp distribution
-        self._target_nodes_importance_values = self._get_target_nodes_importance_values_using_exp_distribution(self._target_nodes_locations)
-        #Target nodes importance values extracted using Poisson distribution
-        self._target_nodes_attacks_frequencies = self._get_attacks_frequency_using_poisson_distribution(self._target_nodes_locations)
-        #Attacks per episode not needed, just use distributions to make attacks happen
-        #self.attacks_per_episode = 100
-        
+                
         #self._targets_nodes_future_attacks_schema = get
         #New array for adversarial function
+        self._planned_attacks_on_target_nodes = {}
         for target in self._target_nodes_locations:
-            self._target_nodes_ongoing_attacks_statuses[target]["attack_start_timestep" : 0, "attack_timesteps_lenght": 0]
-        
+            self._planned_attacks_on_target_nodes[target] = []
         
         #Since I cannot use a nested dict in obs so I flatten it to a big Box
         #Max values are minimum and maximum graph size with shape as explained below
@@ -151,10 +147,11 @@ class RayGraphEnv(MultiAgentEnv):
         for target in self._target_nodes_locations:
             self._target_nodes_priority_queue.append(target)
             
-        #Add here reset of array of attacks
-        for target in self._target_nodes_locations:
-            self._target_nodes_ongoing_attacks_statuses[target]["attack_start_timestep" : 0, "attack_timesteps_lenght": 0]
-        
+        #Add here reset of dict of planned attacks
+        self._planned_attacks_on_target_nodes = self._generate_attacks_using_poisson(self._planned_attacks_on_target_nodes, 
+                                                                                   self.max_steps_per_episode,
+                                                                                   self.num_attacks_per_target,
+                                                                                   self.max_attack_lenght)
         
         for i, agent in enumerate(self.agents):
             current_pos_and_target_locations_tuples = [self._agents_locations[agent]]
@@ -182,10 +179,7 @@ class RayGraphEnv(MultiAgentEnv):
             self._agents_locations[agent_id] = new_agent_location
             
             ######### REWARD FUNCTIONS PART #################################
-                            
-            #Give 1 if agent on target node and target node is different than the previously visited one by the agent
-            #rewards[agent_id] = self._one_if_agent_on_new_target_for_all_group_else_zero(agent_id, new_agent_location)
-            
+                                        
             #Give 1 if the target node is the first one in the queue so the last visited
             #rewards[agent_id] = self._minimize_max_idleness(agent_id, new_agent_location)
 
@@ -341,88 +335,63 @@ class RayGraphEnv(MultiAgentEnv):
             self._target_nodes_priority_queue.pop(node_position_in_queue)
         return reward
     
-    def _get_attacks_frequency_using_poisson_distribution(self, target_nodes_location):
-        target_nodes_attacks_frequencies = {}
-        for node, position in target_nodes_location.items():
-            #Assign to each node attack frequency value using a poisson distribution
-            #Change the values every episode or not???
-            #Lambda 0.01 means 0.01 attack each timestep
-            #Over an episode of 500 timesteps it means an average of 5 attacks
-            #Adjust this lambda depending on context
-            target_nodes_attacks_frequencies[node] = np.random.poisson(lam=0.01, size=1)[0]
-        return target_nodes_attacks_frequencies
-    
-    def _get_target_nodes_importance_values_using_exp_distribution(self, target_nodes_location):
-        target_nodes_importance_values = {}
-        importance_values = []
-        for node, position in target_nodes_location.items():
-            #Assign to each node an importance value using an exp distribution
-            #Example with lambda 1
-            #Change the values every episode or not???
-            importance_value = np.random.exponential(scale=1.0, size=1)[0]
-            #importance_value = np.random.uniform(low=1, high=10, size=None)
-            importance_values.append(importance_value)
-            target_nodes_importance_values[node] = importance_value
-        
-        #Problem with max value as normalizer the highest importance target is attacked every step!
-        max_importance_value = np.max(importance_values)
-        normalized_importance_values = {node: importance / max_importance_value for node, importance in target_nodes_importance_values.items()}
-
-        return normalized_importance_values
-    
-    def _reward_function_based_on_attacks(self, agent_id, new_agent_location):
-        reward = 0
-        #Check if agent is on target
-        if new_agent_location in self._target_nodes_locations:
-            #OLD APPROACH
-            """
-            #Retrieve attack frequency for the target node
-            frequency = self._get_attacks_frequency_using_poisson_distribution(new_agent_location)
-            #Find if there's an attack on the current target, if yes assign a reward of 1
-            #if ((self.total_timesteps_counter % self.max_steps_per_episode) % frequency) == 0:
-            if (self.current_episode_timesteps_counter % frequency) == 0:
-                reward = 1
-            """
-            
-            #NEW REFACTORED APPROACH
-            #If an attack happens give reward of 1
-            if np.random.poisson(lam=0.01, size=1) > 0:
-                reward = 1
-                
-            #Can be simplified using just a binomial
-            #Coin flip with one attack every 100 timesteps
-            if np.random.binomial(n=100, p=0.01) > 0:
-                reward = 1
-                
-            #Improved even more by incorporating importance values assigned to targets
-            #Realistic distributions to assign importance values are: exponential, pareto and power-law
-            #Then adjust the binomial parameters based on the importance value of the visited target node
-            if np.random.binomial(n=1, p=self._target_nodes_importance_values) > 0:
-                reward = 1
-            
-        return reward
-    
-    def gen_target_attacks_start_and_length_values(target_nodes_location):
-            
+    #Adversarial
+    def _generate_attacks_using_poisson(self, _planned_attacks_on_target_nodes, episode_duration, average_attacks_per_step, max_attack_duration):
         attacks_tracker_dict = {}
-                
-        #Range of values that can be sampled is equal to 1/scale in exp distribution
-        importance_values = np.round(np.random.exponential(scale=100, size=len(target_nodes_location))).astype(int)
-        #Scale them to upper limit of 1
-        scaled_importance_vales = importance_values / max(importance_values)
-                
-        for i in range(len(target_nodes_location)):
-            #sort to order attacks in time
-            attack_start_times = np.sort(np.random.choice(episode_duration, num_attacks, replace=False))
-            #Extract random attack lenght
-            attack_durations = np.random.randint(1, max_attack_duration, num_attacks)
-            
-            final_attacks_duration = np.ceil(attack_durations * scaled_importance_vales[i])
-            
-            attacks_tracker_dict[target_nodes_location[i]][attack_start_times, final_attacks_duration]
         
-        return attacks_tracker_dict            
+        for target in _planned_attacks_on_target_nodes:
+            #Calculate the number of attacks for this target using a Poisson distribution
+            num_attacks_for_target = np.random.poisson(average_attacks_per_step * episode_duration)
+            
+            #Generate random attack start times for this target
+            attack_start_times = np.sort(np.random.uniform(0, episode_duration, num_attacks_for_target))
+            
+            #Extract random attack lengths for this target
+            attack_durations = np.random.randint(1, max_attack_duration, num_attacks_for_target)
+            
+            #Round attacks start times
+            final_attacks_start_times = np.ceil(attack_start_times).astype(int)
+            # Round attacks to integers
+            final_attacks_duration = np.ceil(attack_durations).astype(int)
+            
+            #Build planned attack dict for the current target
+            attacks_tracker_dict[str(target)] = list(zip(final_attacks_start_times, final_attacks_duration))
         
+        return attacks_tracker_dict
+    
+    def _neutralize_attacks(self, agent_id, new_agent_location):
+        #Give 0 by default
+        reward = 0
+
+        #Check if agent on target node
+        if new_agent_location in self._planned_attacks_on_target_nodes:
+            #Get the dict of planned attacks on this target
+            planned_attacks = self._planned_attacks_on_target_nodes[new_agent_location]
+            
+            #Check that planned attacks exist
+            if planned_attacks:
+                #If there are attacks that are in the past and have not been defused in time, remove them
+                while (
+                    planned_attacks 
+                    and self.current_episode_timesteps_counter > planned_attacks[0][0] + planned_attacks[0][1]
+                ):
+                    planned_attacks.pop(0)
+
+                #Then check if the current attack is ongoing while the agent is on the node
+                #and if yes, neutralize the attack and return a reward of 1
+                if planned_attacks:
+                    #Get the current/next attack
+                    attack_start_time, attack_duration = planned_attacks[0]
+
+                    #Check if there's an ongoing attack
+                    if (
+                        self.current_episode_timesteps_counter >= attack_start_time
+                        and self.current_episode_timesteps_counter <= attack_start_time + attack_duration
+                    ):
+                        planned_attacks.pop(0)
+                        reward = 1  # Neutralized attack!
+
+        return reward
     
 class RayGraphEnv_Coop(RayGraphEnv):
     
@@ -445,15 +414,14 @@ class RayGraphEnv_Coop(RayGraphEnv):
             self._agents_locations[agent_id] = new_agent_location
             
             ############# REWARD FUNCTIONS ######################            
-            
-            #Give 1 if target still not visited by other agents of same team else 0
-            #rewards[agent_id] = self._one_if_agent_on_new_target_for_all_group_else_zero(agent_id, new_agent_location)
-
             #Give 1 if the target node is the first one in the queue so the last visited
             #rewards[agent_id] = self._minimize_max_idleness(agent_id, new_agent_location)
             
             #Give 1 if the target node is in first half of the queue so not one of the most visited recently
-            rewards[agent_id] = self._minimize_average_idleness(agent_id, new_agent_location)
+            #rewards[agent_id] = self._minimize_average_idleness(agent_id, new_agent_location)
+            
+            #Give 1 if the agent is on target node receiving attack
+            rewards[agent_id] = self._neutralize_attacks(agent_id, new_agent_location)
             
             ############# REWARD FUNCTIONS SECTION END ######################
             

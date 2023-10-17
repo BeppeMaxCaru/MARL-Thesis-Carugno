@@ -4,20 +4,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.table import Table
 
-#filepath_experiment1 = os.path.abspath(r"C:\Users\gmaxc\OneDrive - Università degli Studi di Milano\Thesis experiments\RPatrolling\Cooperative\Non-adversarial\AVG idleness\IPPO\No params sharing\Renamed results file\RPatrolling IPPO coop 256-128 AVG idleness no params sharing.csv")
-#filepath_experiment2 = os.path.abspath(r"C:\Users\gmaxc\OneDrive - Università degli Studi di Milano\Thesis experiments\RPatrolling\Cooperative\Non-adversarial\AVG idleness\IPPO\Params sharing\Renamed results file\RPatrolling IPPO coop 256-128 AVG idleness with params sharing.csv")
+algo_name = "MATRPO"
+filepath_experiment1 = os.path.abspath(r"C:\Users\gmaxc\OneDrive - Università degli Studi di Milano\Thesis experiments\RPatrolling\Cooperative\Non-adversarial\MAX idleness\MATRPO\No params sharing\Renamed results file\RPatrolling MATRPO coop 256-128 MAX idleness no params sharing.csv")
+filepath_experiment2 = os.path.abspath(r"C:\Users\gmaxc\OneDrive - Università degli Studi di Milano\Thesis experiments\RPatrolling\Cooperative\Non-adversarial\MAX idleness\MATRPO\Params sharing\Renamed results file\RPatrolling MATRPO coop 256-128 MAX idleness with params sharing.csv")
 #print(filepath_experiment1)
-
-#algo_name = "IPPO"
-#filepath_experiment1 = os.path.abspath(r"C:\Users\gmaxc\OneDrive - Università degli Studi di Milano\Thesis experiments\RPatrolling\Cooperative\Non-adversarial\MAX idleness\IPPO\No params sharing\Renamed results file\RPatrolling IPPO coop 256-128 MAX idleness no params sharing.csv")
-#filepath_experiment2 = os.path.abspath(r"C:\Users\gmaxc\OneDrive - Università degli Studi di Milano\Thesis experiments\RPatrolling\Cooperative\Non-adversarial\MAX idleness\IPPO\Params sharing\Renamed results file\RPatrolling IPPO coop 256-128 MAX idleness with params sharing.csv")
-
-algo_name = "MAPPO"
-#filepath_experiment1 = os.path.abspath(r"C:\Users\gmaxc\OneDrive - Università degli Studi di Milano\Thesis experiments\RPatrolling\Cooperative\Non-adversarial\AVG idleness\MAPPO\No params sharing\Renamed results file\RPatrolling MAPPO coop 256-128 AVG idleness no params sharing.csv")
-#filepath_experiment2 = os.path.abspath(r"C:\Users\gmaxc\OneDrive - Università degli Studi di Milano\Thesis experiments\RPatrolling\Cooperative\Non-adversarial\AVG idleness\MAPPO\Params sharing\Renamed results file\RPatrolling MAPPO coop 256-128 AVG idleness with params sharing.csv")
-
-filepath_experiment1 = os.path.abspath(r"C:\Users\gmaxc\OneDrive - Università degli Studi di Milano\Thesis experiments\RPatrolling\Cooperative\Non-adversarial\MAX idleness\MAPPO\No params sharing\Renamed results file\RPatrolling MAPPO coop 256-128 MAX idleness no params sharing.csv")
-filepath_experiment2 = os.path.abspath(r"C:\Users\gmaxc\OneDrive - Università degli Studi di Milano\Thesis experiments\RPatrolling\Cooperative\Non-adversarial\MAX idleness\MAPPO\Params sharing\Renamed results file\RPatrolling MAPPO coop 256-128 MAX idleness with params sharing.csv")
 
 dataframe_experiment1 = pd.read_csv(filepath_experiment1)
 dataframe_experiment2 = pd.read_csv(filepath_experiment2)
