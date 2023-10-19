@@ -89,8 +89,8 @@ class RayGraphEnv(MultiAgentEnv):
         self._target_nodes_locations = self._get_target_nodes_locations(self._graph)
         
         #Used to create more complex reward functions
-        self._last_visited_target_nodes_by_agents = {} #Dict agent to last visited nodes from him
-        self._visited_target_nodes_by_group = [] #list with visited target from group o agents
+        #self._last_visited_target_nodes_by_agents = {} #Dict agent to last visited nodes from him
+        #self._visited_target_nodes_by_group = [] #list with visited target from group o agents
         self._target_nodes_priority_queue = []
                 
         #self._targets_nodes_future_attacks_schema = get
@@ -98,6 +98,7 @@ class RayGraphEnv(MultiAgentEnv):
         self._planned_attacks_on_target_nodes = {}
         for target in self._target_nodes_locations:
             self._planned_attacks_on_target_nodes[target] = []
+        #print("Result of init: " + str(self._planned_attacks_on_target_nodes))
         
         #Since I cannot use a nested dict in obs so I flatten it to a big Box
         #Max values are minimum and maximum graph size with shape as explained below
@@ -137,11 +138,13 @@ class RayGraphEnv(MultiAgentEnv):
         self._agents_locations = self._set_agents_random_starting_locations(self._graph)
         
         #Set array of last visited nodes by agents
+        """
         self._last_visited_target_nodes_by_agents = {}
         for i, agent in enumerate(self.agents):
             if self._agents_locations[agent] in self._target_nodes_locations:
                 self._last_visited_target_nodes_by_agents[agent] = self._agents_locations[agent]
-            
+        """
+        
         #Reset queue and fill it
         self._target_nodes_priority_queue = []
         for target in self._target_nodes_locations:
@@ -152,6 +155,8 @@ class RayGraphEnv(MultiAgentEnv):
                                                                                    self.max_steps_per_episode,
                                                                                    self.num_attacks_per_target,
                                                                                    self.max_attack_lenght)
+        
+        #print(self._planned_attacks_on_target_nodes)
         
         for i, agent in enumerate(self.agents):
             current_pos_and_target_locations_tuples = [self._agents_locations[agent]]
@@ -340,23 +345,32 @@ class RayGraphEnv(MultiAgentEnv):
         attacks_tracker_dict = {}
         
         for target in _planned_attacks_on_target_nodes:
+            
+            attacks_tracker_dict[target] = []
+            
             #Calculate the number of attacks for this target using a Poisson distribution
-            num_attacks_for_target = np.random.poisson(average_attacks_per_step * episode_duration)
+            #num_attacks_for_target = np.random.poisson(average_attacks_per_step * episode_duration)
+            #num_num_attacks_for_target = np.random.poisson(25)
+            num_attacks_for_target = np.random.exponential(1 / 0.02, 10)
+            num_attacks_for_target = np.cumsum(num_attacks_for_target).astype(np.int64)
+            num_attacks_for_target = num_attacks_for_target[num_attacks_for_target <= 500]
+            #print(num_attacks_for_target)
             
             #Generate random attack start times for this target
-            attack_start_times = np.sort(np.random.uniform(0, episode_duration, num_attacks_for_target))
+            #attack_start_times = np.sort(np.random.uniform(0, episode_duration, num_attacks_for_target))
             
             #Extract random attack lengths for this target
-            attack_durations = np.random.randint(1, max_attack_duration, num_attacks_for_target)
+            attack_durations = np.random.randint(1, max_attack_duration, len(num_attacks_for_target))
             
             #Round attacks start times
-            final_attacks_start_times = np.ceil(attack_start_times).astype(int)
+            #final_attacks_start_times = np.ceil(attack_start_times).astype(int)
             # Round attacks to integers
             final_attacks_duration = np.ceil(attack_durations).astype(int)
             
             #Build planned attack dict for the current target
-            attacks_tracker_dict[str(target)] = list(zip(final_attacks_start_times, final_attacks_duration))
+            attacks_tracker_dict[target] = list(zip(num_attacks_for_target, final_attacks_duration))
         
+        #print(attacks_tracker_dict)
         return attacks_tracker_dict
     
     def _neutralize_attacks(self, agent_id, new_agent_location):
@@ -388,8 +402,12 @@ class RayGraphEnv(MultiAgentEnv):
                         self.current_episode_timesteps_counter >= attack_start_time
                         and self.current_episode_timesteps_counter <= attack_start_time + attack_duration
                     ):
+                        print("Before pop: " + str(planned_attacks))
                         planned_attacks.pop(0)
                         reward = 1  # Neutralized attack!
+                        print("After pop: " + str(planned_attacks))
+
+                self._planned_attacks_on_target_nodes[new_agent_location] = planned_attacks
 
         return reward
     
