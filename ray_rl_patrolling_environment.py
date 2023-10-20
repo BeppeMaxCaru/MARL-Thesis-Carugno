@@ -126,6 +126,8 @@ class RayGraphEnv(MultiAgentEnv):
         self.action_space = gym.spaces.Box(low=0, high=4, shape=(), dtype=np.int32)
                 
         self.env_config = env_config
+        
+        #self.reward_counter = 0
                                 
     def reset(self):
 
@@ -149,14 +151,18 @@ class RayGraphEnv(MultiAgentEnv):
         self._target_nodes_priority_queue = []
         for target in self._target_nodes_locations:
             self._target_nodes_priority_queue.append(target)
-            
+        
+        #print("Planned attacks dict before reset: " + str(self._planned_attacks_on_target_nodes))
         #Add here reset of dict of planned attacks
         self._planned_attacks_on_target_nodes = self._generate_attacks_using_poisson(self._planned_attacks_on_target_nodes, 
                                                                                    self.max_steps_per_episode,
                                                                                    self.num_attacks_per_target,
                                                                                    self.max_attack_lenght)
         
-        #print(self._planned_attacks_on_target_nodes)
+        
+        #print("New planned attacks dict after reset: " + str(self._planned_attacks_on_target_nodes))
+        #print("Reward counter value at the end of the current episode: " + str(self.reward_counter))
+        #self.reward_counter = 0
         
         for i, agent in enumerate(self.agents):
             current_pos_and_target_locations_tuples = [self._agents_locations[agent]]
@@ -402,10 +408,11 @@ class RayGraphEnv(MultiAgentEnv):
                         self.current_episode_timesteps_counter >= attack_start_time
                         and self.current_episode_timesteps_counter <= attack_start_time + attack_duration
                     ):
-                        print("Before pop: " + str(planned_attacks))
+                        #print("Before pop: " + str(planned_attacks))
                         planned_attacks.pop(0)
                         reward = 1  # Neutralized attack!
-                        print("After pop: " + str(planned_attacks))
+                        #self.reward_counter = self.reward_counter + 1
+                        #print("After pop: " + str(planned_attacks))
 
                 self._planned_attacks_on_target_nodes[new_agent_location] = planned_attacks
 
