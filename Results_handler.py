@@ -4,14 +4,19 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.table import Table
 
-algo_name = "MATRPO"
-filepath_experiment1 = os.path.abspath(r"C:\Users\gmaxc\OneDrive - Università degli Studi di Milano\Thesis experiments\RPatrolling\Cooperative\Non-adversarial\MAX idleness\MATRPO\No params sharing\Renamed results file\RPatrolling MATRPO coop 256-128 MAX idleness no params sharing.csv")
-filepath_experiment2 = os.path.abspath(r"C:\Users\gmaxc\OneDrive - Università degli Studi di Milano\Thesis experiments\RPatrolling\Cooperative\Non-adversarial\MAX idleness\MATRPO\Params sharing\Renamed results file\RPatrolling MATRPO coop 256-128 MAX idleness with params sharing.csv")
+algo_name = "IPPO"
+filepath_experiment1 = os.path.abspath(r"C:\Users\gmaxc\OneDrive - Università degli Studi di Milano\Thesis experiments\RWARE\IPPO\No params sharing\Trial AISLAB VM 40M interrupted ippo cooperative no params sharing mlp 258-128 tiny 4p 11x11 medium difficulty.xlsx")
+filepath_experiment2 = os.path.abspath(r"C:\Users\gmaxc\OneDrive - Università degli Studi di Milano\Thesis experiments\RWARE\IPPO\Params sharing\Trial AISLAB VM 40M interrupted ippo cooperative with params sharing mlp 258-128 tiny 4p 11x11 medium difficulty.xlsx")
 #print(filepath_experiment1)
 
-dataframe_experiment1 = pd.read_csv(filepath_experiment1)
-dataframe_experiment2 = pd.read_csv(filepath_experiment2)
+#For CSV
+#dataframe_experiment1 = pd.read_csv(filepath_experiment1)
+#dataframe_experiment2 = pd.read_csv(filepath_experiment2)
 #print(dataframe_experiment1.iloc[:,[2]])
+
+#For Excel
+dataframe_experiment1 = pd.read_excel(filepath_experiment1)
+dataframe_experiment2 = pd.read_excel(filepath_experiment2)
 
 df1 = dataframe_experiment1.loc[:,["episode_reward_mean", "timesteps_total"]]
 df2 = dataframe_experiment2.loc[:,["episode_reward_mean", "timesteps_total"]]
